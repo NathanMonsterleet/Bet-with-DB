@@ -1,0 +1,2 @@
+const SUPABASE_URL = 'https://dlexygpxcgrmnlosgutv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZXh5Z3B4Y2dybW5sb3NndXR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTY1OTgsImV4cCI6MjA5NTM5MjU5OH0.BrNisUDCArpYWhIDMiqck7H86jfXkcRSB1KXsNjMA3w';

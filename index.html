@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bet with Daniel Boulud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: #f7f5f0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px 16px 48px;
+    }
+
+    .w {
+      background: #ffffff;
+      max-width: 480px;
+      width: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.07);
+    }
+
+    .top-bar {
+      background: #1a1a1a;
+      text-align: center;
+      padding: 10px 20px;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .hero {
+      text-align: center;
+      padding: 36px 24px 28px;
+      border-bottom: 1px solid #ebebeb;
+    }
+
+    .hero-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #b08d3e;
+      font-weight: 500;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 44px;
+      font-weight: 600;
+      line-height: 1.05;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+    }
+
+    h1 em { font-style: italic; color: #b08d3e; }
+
+    .hero-sub {
+      font-size: 13px;
+      color: #888;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+    }
+
+    .ornament {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 24px;
+      padding: 20px 0 0;
+    }
+    .ornament::before, .ornament::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e8e2d6;
+    }
+    .ornament span { font-size: 14px; color: #c9b97a; }
+
+    .section { padding: 20px 24px 0; }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #aaa;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .match-card {
+      border: 1px solid #ebebeb;
+      border-radius: 14px;
+      padding: 20px;
+      background: #fafafa;
+    }
+
+    .teams-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .team {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .flag { font-size: 34px; line-height: 1; }
+
+    .team-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .vs {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 13px;
+      font-style: italic;
+      color: #bbb;
+      padding: 0 8px;
+    }
+
+    .match-meta {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #ebebeb;
+      font-size: 11px;
+      color: #999;
+      flex-wrap: wrap;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .score-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-team-lbl {
+      font-size: 11px;
+      color: #999;
+      letter-spacing: 0.06em;
+    }
+
+    .score-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .score-box {
+      width: 78px;
+      height: 78px;
+      border: 1.5px solid #e0d9cc;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+    }
+
+    .score-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px;
+      font-weight: 600;
+      color: #1a1a1a;
+      line-height: 1;
+    }
+
+    .score-btns { display: flex; flex-direction: column; gap: 4px; }
+
+    .sbtn {
+      width: 26px;
+      height: 26px;
+      border: 1px solid #e0d9cc;
+      border-radius: 6px;
+      background: #fff;
+      color: #b08d3e;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s;
+    }
+    .sbtn:hover { background: #faf6ee; border-color: #b08d3e; }
+
+    .score-sep {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      color: #ddd;
+      padding: 0 2px;
+      align-self: flex-end;
+      padding-bottom: 24px;
+    }
+
+    .form-block {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+
+    .field label {
+      font-size: 11px;
+      color: #aaa;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .field input, .field select {
+      padding: 11px 14px;
+      border: 1px solid #e8e3da;
+      border-radius: 9px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      color: #1a1a1a;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+      appearance: none;
+      width: 100%;
+    }
+
+    .field input:focus, .field select:focus { border-color: #b08d3e; }
+    .field input::placeholder { color: #ccc; }
+
+    .prize-strip {
+      background: #fdf9f1;
+      border: 1px solid #e8d9b0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .prize-icon {
+      width: 34px;
+      height: 34px;
+      background: #f5edcf;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .prize-stage {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #b08d3e;
+      font-weight: 500;
+      margin-bottom: 3px;
+    }
+
+    .prize-reward {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: #1a1a1a;
+      line-height: 1.3;
+    }
+
+    .prize-cond { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+    .cta-btn {
+      width: 100%;
+      padding: 16px;
+      background: #1a1a1a;
+      border: none;
+      border-radius: 11px;
+      color: #fff;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 600;
+      font-style: italic;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .cta-btn:hover { background: #2e2e2e; transform: translateY(-1px); }
+    .cta-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+    .cta-note {
+      text-align: center;
+      font-size: 11px;
+      color: #bbb;
+      margin-top: 10px;
+      font-weight: 300;
+    }
+
+    .error-msg {
+      background: #fff5f5;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      border-radius: 9px;
+      padding: 10px 14px;
+      font-size: 13px;
+      display: none;
+    }
+
+    #revealScreen { display: none; padding: 40px 24px 32px; text-align: center; }
+
+    .reveal-check {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #f0faf0;
+      border: 1px solid #bbf7d0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 24px;
+    }
+
+    .reveal-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+    }
+
+    .reveal-sub {
+      font-size: 13px;
+      color: #888;
+      font-weight: 300;
+      margin-bottom: 28px;
+    }
+
+    .your-pick {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .pick-col { text-align: center; }
+
+    .pick-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-bottom: 4px;
+    }
+
+    .pick-score {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 52px;
+      font-weight: 600;
+      color: #1a1a1a;
+      line-height: 1;
+    }
+
+    .pick-sep {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      color: #ddd;
+      padding-top: 20px;
+    }
+
+    .reveal-divider { height: 1px; background: #ebebeb; margin: 24px 0; }
+
+    .daniel-reveal-label {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #b08d3e;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .daniel-reveal-card {
+      background: #fdf9f1;
+      border: 1px solid #e8d9b0;
+      border-radius: 14px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-align: left;
+      margin-bottom: 8px;
+    }
+
+    .db-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #f0e8cc;
+      border: 1.5px solid #e8d9b0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #b08d3e;
+      flex-shrink: 0;
+    }
+
+    .db-score {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .db-quote { font-size: 12px; color: #999; font-style: italic; margin-top: 3px; }
+
+    #noMatch { display: none; text-align: center; padding: 48px 24px; }
+    #noMatch .no-match-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    #noMatch p { font-size: 14px; color: #888; font-weight: 300; }
+
+    #loadingState { text-align: center; padding: 48px 24px; color: #aaa; font-size: 14px; }
+
+    .footer-txt {
+      text-align: center;
+      font-size: 10px;
+      color: #ccc;
+      padding: 16px 24px 0;
+      font-weight: 300;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="w">
+    <div class="top-bar">Dinex Group &nbsp;·&nbsp; FIFA World Cup 2026</div>
+
+    <div class="hero">
+      <div class="hero-eyebrow">The Chef's Challenge</div>
+      <h1>Bet with<br><em>Daniel Boulud</em></h1>
+      <p class="hero-sub">Predict the score. Beat the chef. Win the table.</p>
+    </div>
+
+    <div id="loadingState">Loading today's match…</div>
+
+    <div id="noMatch">
+      <div class="no-match-title">No match today</div>
+      <p>Check back on the next match day —<br>Daniel will have a new prediction waiting.</p>
+    </div>
+
+    <div id="mainForm" style="display:none;">
+      <div class="ornament"><span>✦</span></div>
+
+      <div class="section">
+        <div class="section-label">Today's match</div>
+        <div class="match-card">
+          <div class="teams-row">
+            <div class="team">
+              <div class="flag" id="flagHome">🏳️</div>
+              <div class="team-name" id="teamHome">—</div>
+            </div>
+            <div class="vs">vs</div>
+            <div class="team">
+              <div class="flag" id="flagAway">🏳️</div>
+              <div class="team-name" id="teamAway">—</div>
+            </div>
+          </div>
+          <div class="match-meta">
+            <span id="matchTime">—</span>
+            <span id="matchVenue">—</span>
+            <span id="matchStage">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="padding-top:20px;">
+        <div class="section-label">Your prediction</div>
+        <div class="score-row">
+          <div class="score-unit">
+            <div class="score-team-lbl" id="scoreLabelHome">Home</div>
+            <div class="score-control">
+              <div class="score-box"><span class="score-num" id="g1">1</span></div>
+              <div class="score-btns">
+                <button class="sbtn" onclick="adj('g1',1)">+</button>
+                <button class="sbtn" onclick="adj('g1',-1)">−</button>
+              </div>
+            </div>
+          </div>
+          <div class="score-sep">–</div>
+          <div class="score-unit">
+            <div class="score-team-lbl" id="scoreLabelAway">Away</div>
+            <div class="score-control">
+              <div class="score-box"><span class="score-num" id="g2">1</span></div>
+              <div class="score-btns">
+                <button class="sbtn" onclick="adj('g2',1)">+</button>
+                <button class="sbtn" onclick="adj('g2',-1)">−</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="form-block">
+          <div class="field">
+            <label>Your first name</label>
+            <input type="text" id="fname" placeholder="e.g. Sophie" />
+          </div>
+          <div class="field">
+            <label>Email address</label>
+            <input type="email" id="femail" placeholder="you@example.com" />
+          </div>
+          <div class="field">
+            <label>Restaurant</label>
+            <select id="frest">
+              <option value="">Select a restaurant…</option>
+              <option>Daniel – New York</option>
+              <option>Café Boulud – New York</option>
+              <option>Bar Boulud – New York</option>
+              <option>Épicerie Boulud – New York</option>
+              <option>db Bistro – Miami</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="prize-strip">
+          <div class="prize-icon">🏆</div>
+          <div>
+            <div class="prize-stage" id="prizeStage">Prize</div>
+            <div class="prize-reward" id="prizeReward">—</div>
+            <div class="prize-cond">Exact score match required · Redeemable same evening</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="error-msg" id="errorMsg"></div>
+        <button class="cta-btn" id="submitBtn" onclick="handleSubmit()">Submit my prediction →</button>
+        <div class="cta-note">Daniel's prediction will be revealed after you submit</div>
+      </div>
+
+      <div class="footer-txt">
+        One entry per person per match · Results verified after final whistle<br>
+        Winners notified by email within 24 hours
+      </div>
+    </div>
+
+    <div id="revealScreen">
+      <div class="reveal-check">✓</div>
+      <div class="reveal-title">Prediction submitted!</div>
+      <div class="reveal-sub">Good luck — results verified after the final whistle.</div>
+
+      <div class="your-pick">
+        <div class="pick-col">
+          <div class="pick-label" id="revHomeLabel">Home</div>
+          <div class="pick-score" id="rg1">1</div>
+        </div>
+        <div class="pick-sep">–</div>
+        <div class="pick-col">
+          <div class="pick-label" id="revAwayLabel">Away</div>
+          <div class="pick-score" id="rg2">1</div>
+        </div>
+      </div>
+
+      <div class="reveal-divider"></div>
+
+      <div class="daniel-reveal-label">✦ &nbsp;Chef Daniel's prediction&nbsp; ✦</div>
+      <div class="daniel-reveal-card">
+        <div class="db-avatar">DB</div>
+        <div>
+          <div class="db-score" id="danielScore">—</div>
+          <div class="db-quote" id="danielQuote">—</div>
+        </div>
+      </div>
+
+      <div class="reveal-divider"></div>
+
+      <div class="prize-strip">
+        <div class="prize-icon">🏆</div>
+        <div>
+          <div class="prize-stage">If you guessed right…</div>
+          <div class="prize-reward" id="revealPrize">—</div>
+          <div class="prize-cond">Show this screen to your server tonight</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createClient } = supabase;
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let activeMatch = null;
+
+    async function loadMatch() {
+      const { data, error } = await client
+        .from('matches')
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      document.getElementById('loadingState').style.display = 'none';
+
+      if (error || !data) {
+        document.getElementById('noMatch').style.display = 'block';
+        return;
+      }
+
+      activeMatch = data;
+      document.getElementById('mainForm').style.display = 'block';
+
+      document.getElementById('flagHome').textContent = data.flag_home || '🏳️';
+      document.getElementById('flagAway').textContent = data.flag_away || '🏳️';
+      document.getElementById('teamHome').textContent = data.team_home;
+      document.getElementById('teamAway').textContent = data.team_away;
+      document.getElementById('scoreLabelHome').textContent = data.team_home;
+      document.getElementById('scoreLabelAway').textContent = data.team_away;
+      document.getElementById('matchTime').textContent = data.kickoff_time || '';
+      document.getElementById('matchVenue').textContent = data.venue || '';
+      document.getElementById('matchStage').textContent = data.stage || '';
+      document.getElementById('prizeStage').textContent = 'Prize · ' + (data.stage || '');
+      document.getElementById('prizeReward').textContent = data.reward_text || '';
+    }
+
+    function adj(id, delta) {
+      const el = document.getElementById(id);
+      let v = parseInt(el.textContent) + delta;
+      if (v < 0) v = 0;
+      if (v > 9) v = 9;
+      el.textContent = v;
+    }
+
+    async function handleSubmit() {
+      const name = document.getElementById('fname').value.trim();
+      const email = document.getElementById('femail').value.trim();
+      const rest = document.getElementById('frest').value;
+      const errEl = document.getElementById('errorMsg');
+
+      errEl.style.display = 'none';
+
+      if (!name || !email || !rest) {
+        errEl.textContent = 'Please fill in all fields before submitting.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      if (!activeMatch) return;
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+
+      const scoreHome = parseInt(document.getElementById('g1').textContent);
+      const scoreAway = parseInt(document.getElementById('g2').textContent);
+
+      const { error } = await client.from('predictions').insert({
+        match_id: activeMatch.id,
+        guest_name: name,
+        guest_email: email,
+        restaurant: rest,
+        score_home: scoreHome,
+        score_away: scoreAway
+      });
+
+      if (error) {
+        if (error.code === '23505') {
+          errEl.textContent = 'You have already submitted a prediction for this match.';
+        } else {
+          errEl.textContent = 'Something went wrong. Please try again.';
+        }
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Submit my prediction →';
+        return;
+      }
+
+      document.getElementById('rg1').textContent = scoreHome;
+      document.getElementById('rg2').textContent = scoreAway;
+      document.getElementById('revHomeLabel').textContent = activeMatch.team_home;
+      document.getElementById('revAwayLabel').textContent = activeMatch.team_away;
+
+      const danielHome = activeMatch.daniel_score_home ?? '?';
+      const danielAway = activeMatch.daniel_score_away ?? '?';
+      document.getElementById('danielScore').textContent =
+        activeMatch.team_home + ' ' + danielHome + ' – ' + danielAway + ' ' + activeMatch.team_away;
+      document.getElementById('danielQuote').textContent =
+        activeMatch.daniel_quote ? '"' + activeMatch.daniel_quote + '"' : '';
+      document.getElementById('revealPrize').textContent = activeMatch.reward_text || '';
+
+      document.getElementById('mainForm').style.display = 'none';
+      document.getElementById('revealScreen').style.display = 'block';
+    }
+
+    loadMatch();
+  </script>
+</body>
+</html>

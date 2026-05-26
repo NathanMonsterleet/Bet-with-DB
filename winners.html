@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Winners – Bet with Daniel Boulud</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: #f7f5f0;
+      min-height: 100vh;
+      padding: 32px 16px 64px;
+    }
+
+    .container { max-width: 700px; margin: 0 auto; }
+
+    .page-header {
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e8e3da;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .page-title em { font-style: italic; color: #b08d3e; }
+
+    .nav-link {
+      font-size: 13px;
+      color: #888;
+      text-decoration: none;
+      border: 1px solid #e0d9cc;
+      padding: 6px 14px;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+    .nav-link:hover { background: #fff; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px 28px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #aaa;
+      font-weight: 500;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0ede6;
+    }
+
+    .match-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .match-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .match-result {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      color: #b08d3e;
+      font-weight: 600;
+    }
+
+    .match-meta { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    .winner-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      table-layout: fixed;
+    }
+
+    .winner-table th {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #aaa;
+      font-weight: 500;
+      border-bottom: 1px solid #f0ede6;
+    }
+
+    .winner-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f7f5f0;
+      color: #333;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .winner-table tr:last-child td { border-bottom: none; }
+    .winner-table tr:hover td { background: #fdf9f1; }
+
+    .no-winners {
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+      color: #aaa;
+      font-style: italic;
+    }
+
+    .badge-winner {
+      background: #fdf9f1;
+      color: #b08d3e;
+      border: 1px solid #e8d9b0;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    #loadingState { text-align: center; padding: 48px; color: #aaa; font-size: 14px; }
+
+    #loginScreen {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+    }
+
+    #loginScreen h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    #loginScreen p { font-size: 14px; color: #888; margin-bottom: 24px; }
+
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+
+    .field input {
+      padding: 10px 13px;
+      border: 1px solid #e8e3da;
+      border-radius: 9px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      color: #1a1a1a;
+      outline: none;
+      width: 100%;
+    }
+
+    .field input:focus { border-color: #b08d3e; }
+
+    .btn-primary {
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: #1a1a1a;
+      color: #fff;
+      width: 100%;
+    }
+
+    .error-msg {
+      background: #fff5f5;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      border-radius: 9px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div id="loginScreen">
+      <h2>Admin access</h2>
+      <p>Enter the admin password to continue</p>
+      <div class="field">
+        <input type="password" id="pwInput" placeholder="Password" onkeydown="if(event.key==='Enter')checkPassword()" />
+      </div>
+      <button class="btn-primary" onclick="checkPassword()">Sign in</button>
+      <div class="error-msg" id="loginError">Incorrect password</div>
+    </div>
+
+    <div id="mainContent" style="display:none;">
+      <div class="page-header">
+        <div class="page-title"><em>Winners</em></div>
+        <a href="/admin" class="nav-link">← Back to admin</a>
+      </div>
+
+      <div id="loadingState">Loading winners…</div>
+      <div id="winnersList"></div>
+    </div>
+  </div>
+
+  <script>
+    const { createClient } = supabase;
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const ADMIN_PASSWORD = 'dinex2026';
+
+    function checkPassword() {
+      const pw = document.getElementById('pwInput').value;
+      if (pw === ADMIN_PASSWORD) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        loadWinners();
+      } else {
+        document.getElementById('loginError').style.display = 'block';
+      }
+    }
+
+    async function loadWinners() {
+      const { data: matches } = await client
+        .from('matches')
+        .select('*')
+        .order('match_date', { ascending: false });
+
+      document.getElementById('loadingState').style.display = 'none';
+
+      if (!matches || matches.length === 0) {
+        document.getElementById('winnersList').innerHTML =
+          '<div style="text-align:center;color:#aaa;padding:48px;font-size:14px;">No matches yet.</div>';
+        return;
+      }
+
+      const html = await Promise.all(matches.map(async (m) => {
+        const { data: preds } = await client
+          .from('predictions')
+          .select('*')
+          .eq('match_id', m.id)
+          .order('created_at', { ascending: true });
+
+        const winners = (preds || []).filter(p => p.is_winner);
+        const total = (preds || []).length;
+
+        const resultText = (m.actual_score_home !== null)
+          ? `${m.team_home} ${m.actual_score_home} – ${m.actual_score_away} ${m.team_away}`
+          : 'Result not yet entered';
+
+        const winnerRows = winners.length > 0
+          ? winners.map(w => `
+              <tr>
+                <td>${w.guest_name}</td>
+                <td>${w.guest_email}</td>
+                <td>${w.restaurant}</td>
+                <td>${w.score_home}–${w.score_away}</td>
+                <td><span class="badge-winner">Winner</span></td>
+              </tr>`).join('')
+          : `<tr><td colspan="5" class="no-winners">No exact score matches for this game</td></tr>`;
+
+        return `
+          <div class="card">
+            <div class="match-header">
+              <div>
+                <div class="match-name">${m.flag_home || ''} ${m.team_home} vs ${m.team_away} ${m.flag_away || ''}</div>
+                <div class="match-meta">${m.match_date} · ${m.stage} · ${total} prediction${total !== 1 ? 's' : ''}</div>
+              </div>
+              <div class="match-result">${resultText}</div>
+            </div>
+            <table class="winner-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Restaurant</th>
+                  <th>Their pick</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>${winnerRows}</tbody>
+            </table>
+          </div>`;
+      }));
+
+      document.getElementById('winnersList').innerHTML = html.join('');
+    }
+  </script>
+</body>
+</html>

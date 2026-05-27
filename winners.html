@@ -196,17 +196,17 @@
 <body>
 <div class="container">
 
-  <div id="loginScreen">
+  <div id="loginBox">
     <h2>Admin access</h2>
     <p>Enter the password to view winners</p>
     <div class="field" style="margin-bottom:14px;">
-      <input type="password" id="pwInput" placeholder="Password" />
+      <input type="password" id="pw" placeholder="Password" />
     </div>
     <button class="btn btn-primary" onclick="checkPassword()">Sign in</button>
-    <div class="error-msg" id="loginError">Incorrect password</div>
+    <div class="error-msg" id="err">Incorrect password</div>
   </div>
 
-  <div id="mainContent" style="display:none;">
+  <div id="main" style="display:none;">
 
     <div class="page-header">
       <div class="page-title">Winners &nbsp;<em>board</em></div>
@@ -225,13 +225,15 @@
   const ADMIN_PASSWORD = 'dinex2026';
 
   function checkPassword() {
-const pw = document.getElementById('pwInput').value;
+    const pw = document.getElementById('pw').value;
+    alert('Password entered: ' + pw);
+    alert('Expected: ' + ADMIN_PASSWORD);
     if (pw === ADMIN_PASSWORD) {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('mainContent').style.display = 'block';
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('main').style.display = 'block';
       loadWinners();
     } else {
-      document.getElementById('loginError').style.display = 'block';
+      document.getElementById('err').style.display = 'block';
     }
   }
 

@@ -222,13 +222,11 @@
 <script>
   const { createClient } = supabase;
   const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const ADMIN_PASSWORD = 'dinex2026';
-
   function checkPassword() {
     const pw = document.getElementById('pw').value;
     alert('Password entered: ' + pw);
-    alert('Expected: ' + ADMIN_PASSWORD);
-    if (pw === ADMIN_PASSWORD) {
+    alert('Expected: dinex2026');
+    if (pw === 'dinex2026') {
       document.getElementById('loginBox').style.display = 'none';
       document.getElementById('main').style.display = 'block';
       loadWinners();

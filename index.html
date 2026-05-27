@@ -536,9 +536,15 @@
 
       <div class="section">
         <div class="form-block">
-          <div class="field">
-            <label>Your first name</label>
-            <input type="text" id="fname" placeholder="e.g. Sophie" />
+          <div style="display:flex;gap:12px;">
+            <div class="field" style="flex:1;">
+              <label>First name</label>
+              <input type="text" id="fname" placeholder="e.g. Sophie" />
+            </div>
+            <div class="field" style="flex:1;">
+              <label>Last name</label>
+              <input type="text" id="lname" placeholder="e.g. Martin" />
+            </div>
           </div>
           <div class="field">
             <label>Email address</label>
@@ -548,11 +554,10 @@
             <label>Restaurant</label>
             <select id="frest">
               <option value="">Select a restaurant…</option>
-              <option>Daniel – New York</option>
-              <option>Café Boulud – New York</option>
-              <option>Bar Boulud – New York</option>
-              <option>Épicerie Boulud – New York</option>
-              <option>db Bistro – Miami</option>
+              <option>La Tête D'Or</option>
+              <option>Café Boulud at Maison Barnes</option>
+              <option>Le Pavillon</option>
+              <option>Le Gratin</option>
             </select>
           </div>
         </div>
@@ -667,14 +672,15 @@
     }
 
     async function handleSubmit() {
-      const name = document.getElementById('fname').value.trim();
+      const fname = document.getElementById('fname').value.trim();
+      const lname = document.getElementById('lname').value.trim();
       const email = document.getElementById('femail').value.trim();
       const rest = document.getElementById('frest').value;
       const errEl = document.getElementById('errorMsg');
 
       errEl.style.display = 'none';
 
-      if (!name || !email || !rest) {
+      if (!fname || !lname || !email || !rest) {
         errEl.textContent = 'Please fill in all fields before submitting.';
         errEl.style.display = 'block';
         return;
@@ -691,7 +697,7 @@
 
       const { error } = await client.from('predictions').insert({
         match_id: activeMatch.id,
-        guest_name: name,
+        guest_name: fname + ' ' + lname,
         guest_email: email,
         restaurant: rest,
         score_home: scoreHome,

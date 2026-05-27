@@ -24,6 +24,7 @@
     .winner-row { font-size: 13px; color: #333; padding: 4px 0; }
     .no-winners { font-size: 13px; color: #aaa; font-style: italic; }
     a { font-size: 13px; color: #b08d3e; text-decoration: none; }
+    .btn-csv { width: auto; padding: 8px 16px; background: #b08d3e; font-size: 13px; border-radius: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -40,7 +41,10 @@
   <div id="main" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #e8e3da;">
       <h1 style="margin-bottom:0;">Winners <em>board</em></h1>
-      <a href="/admin">← Admin</a>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <button class="btn-csv" onclick="exportCSV()">Export CSV</button>
+        <a href="/admin">← Admin</a>
+      </div>
     </div>
     <div class="box" id="output">Loading…</div>
   </div>
@@ -65,9 +69,12 @@
     if (e.key === 'Enter') checkPassword();
   });
 
+  let allWinners = [];
+
   async function loadWinners() {
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const output = document.getElementById('output');
+    allWinners = [];
 
     const { data: matches, error } = await client
       .from('matches')
@@ -88,6 +95,7 @@
 
       const winners = preds || [];
       const result = m.actual_score_home !== null ? `${m.actual_score_home} – ${m.actual_score_away}` : 'Pending';
+      winners.forEach(w => allWinners.push({ match: `${m.team_home} vs ${m.team_away}`, date: m.match_date || '', name: w.guest_name || '', email: w.guest_email || '', restaurant: w.restaurant || '', pick: `${w.score_home}–${w.score_away}` }));
 
       const div = document.createElement('div');
       div.className = 'match';
@@ -96,11 +104,22 @@
         <div class="match-meta">${m.match_date || ''} · ${m.stage || ''}</div>
         <div class="match-result">Result: ${result}</div>
         ${winners.length
-          ? winners.map(w => `<div class="winner-row">🏆 ${w.guest_name} (${w.guest_email}) — picked ${w.score_home}–${w.score_away}</div>`).join('')
+          ? winners.map(w => `<div class="winner-row">🏆 ${w.guest_name} (${w.guest_email}) — ${w.restaurant} — picked ${w.score_home}–${w.score_away}</div>`).join('')
           : '<div class="no-winners">No winners</div>'
         }`;
       output.appendChild(div);
     }
+  }
+
+  function exportCSV() {
+    if (!allWinners.length) { alert('No winners to export.'); return; }
+    const rows = [['Match', 'Date', 'Name', 'Email', 'Restaurant', 'Pick']];
+    allWinners.forEach(w => rows.push([w.match, w.date, w.name, w.email, w.restaurant, w.pick]));
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'winners.csv';
+    a.click();
   }
 </script>
 </body>

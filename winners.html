@@ -238,28 +238,39 @@
   }
 
   async function loadWinners() {
-    const { data: matches, error } = await client
-      .from('matches')
-      .select('*')
-      .order('match_date', { ascending: false });
-
-    document.getElementById('loadingState').style.display = 'none';
-
-    if (error || !matches || matches.length === 0) {
-      document.getElementById('matchCards').innerHTML =
-        '<div class="card"><div class="empty-state">No matches found.</div></div>';
-      return;
-    }
-
-    const container = document.getElementById('matchCards');
-
-    for (const match of matches) {
-      const { data: predictions } = await client
-        .from('predictions')
+    try {
+      const { data: matches, error } = await client
+        .from('matches')
         .select('*')
-        .eq('match_id', match.id);
+        .order('match_date', { ascending: false });
 
-      container.appendChild(buildMatchCard(match, predictions || []));
+      if (error) {
+        alert('Supabase error: ' + error.message);
+        return;
+      }
+
+      alert('Matches found: ' + (matches ? matches.length : 0));
+
+      document.getElementById('loadingState').style.display = 'none';
+
+      if (!matches || matches.length === 0) {
+        document.getElementById('matchCards').innerHTML =
+          '<div class="card"><div class="empty-state">No matches found.</div></div>';
+        return;
+      }
+
+      const container = document.getElementById('matchCards');
+
+      for (const match of matches) {
+        const { data: predictions } = await client
+          .from('predictions')
+          .select('*')
+          .eq('match_id', match.id);
+
+        container.appendChild(buildMatchCard(match, predictions || []));
+      }
+    } catch(e) {
+      alert('Caught error: ' + e.message);
     }
   }
 

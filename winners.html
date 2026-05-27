@@ -96,7 +96,7 @@
         <div class="match-meta">${m.match_date || ''} · ${m.stage || ''}</div>
         <div class="match-result">Result: ${result}</div>
         ${winners.length
-          ? winners.map(w => `<div class="winner-row">🏆 ${w.name} (${w.email}) — ${w.restaurant} — picked ${w.score_home}–${w.score_away}</div>`).join('')
+          ? winners.map(w => `<div class="winner-row">🏆 ${w.guest_name} (${w.guest_email}) — picked ${w.score_home}–${w.score_away}</div>`).join('')
           : '<div class="no-winners">No winners</div>'
         }`;
       output.appendChild(div);

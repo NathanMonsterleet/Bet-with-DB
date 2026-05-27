@@ -482,6 +482,11 @@
       <p>Check back on the next match day —<br>Daniel will have a new prediction waiting.</p>
     </div>
 
+    <div id="closedState" style="display:none; text-align:center; padding:48px 24px;">
+      <div class="no-match-title">Predictions are now closed</div>
+      <p>The prediction window for this match has ended.<br>Check back for the next game.</p>
+    </div>
+
     <div id="mainForm" style="display:none;">
       <div class="ornament"><span>✦</span></div>
 
@@ -648,6 +653,12 @@
       }
 
       activeMatch = data;
+
+      if (data.closes_at && new Date() > new Date(data.closes_at)) {
+        document.getElementById('closedState').style.display = 'block';
+        return;
+      }
+
       document.getElementById('mainForm').style.display = 'block';
 
       document.getElementById('flagHome').textContent = data.flag_home || '🏳️';

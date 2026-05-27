@@ -285,7 +285,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Set today's match</div>
+        <div class="card-title" id="matchFormTitle">Set today's match</div>
 
         <div class="grid-2 section-gap">
           <div class="field">
@@ -317,6 +317,13 @@
           <div class="field">
             <label>Kickoff time</label>
             <input type="text" id="kickoffTime" placeholder="e.g. 21:00 EST" />
+          </div>
+        </div>
+
+        <div class="grid-2 section-gap">
+          <div class="field">
+            <label>Predictions close at</label>
+            <input type="datetime-local" id="closesAt" />
           </div>
         </div>
 
@@ -375,7 +382,8 @@
           </label>
         </div>
 
-        <button class="btn btn-primary section-gap" onclick="saveMatch()">Save match</button>
+        <button class="btn btn-primary section-gap" id="saveMatchBtn" onclick="saveMatch()">Save match</button>
+        <button class="btn section-gap" id="cancelEditBtn" onclick="newMatch()" style="display:none;background:#f5f5f5;color:#555;margin-top:8px;">Cancel — create new match</button>
         <div class="success-msg" id="matchSuccess">Match saved successfully!</div>
         <div class="error-msg" id="matchError">Something went wrong. Please try again.</div>
       </div>
@@ -414,6 +422,8 @@
     const { createClient } = supabase;
     const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const ADMIN_PASSWORD = 'dinex2026';
+    let editMatchId = null;
+    let matchesData = [];
 
     function checkPassword() {
       const pw = document.getElementById('pwInput').value;
@@ -459,6 +469,7 @@
         .order('match_date', { ascending: false });
 
       const list = document.getElementById('matchList');
+      matchesData = data || [];
 
       if (!data || data.length === 0) {
         list.innerHTML = '<div style="font-size:13px;color:#aaa;">No matches yet.</div>';
@@ -476,13 +487,91 @@
 
         return `
           <div class="match-row ${m.is_active ? 'active-match' : ''}">
-            <div>
+            <div style="flex:1;min-width:0;">
               <div class="match-row-name">${m.flag_home || ''} ${m.team_home} vs ${m.team_away} ${m.flag_away || ''}</div>
               <div class="match-row-meta">${m.match_date} · ${m.stage}${result}</div>
             </div>
-            ${badge}
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              ${badge}
+              <button onclick="editMatch('${m.id}')" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid #e0d9cc;background:#fff;color:#555;cursor:pointer;font-family:inherit;">Edit</button>
+              <button onclick="deleteMatch('${m.id}')" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid #fecaca;background:#fff;color:#dc2626;cursor:pointer;font-family:inherit;">Delete</button>
+            </div>
           </div>`;
       }).join('');
+    }
+
+    function editMatch(id) {
+      const m = matchesData.find(x => x.id === id);
+      if (!m) return;
+      editMatchId = id;
+
+      document.getElementById('teamHome').value = m.team_home || '';
+      document.getElementById('teamAway').value = m.team_away || '';
+      document.getElementById('flagHome').value = m.flag_home || '';
+      document.getElementById('flagAway').value = m.flag_away || '';
+      document.getElementById('matchDate').value = m.match_date || '';
+      document.getElementById('kickoffTime').value = m.kickoff_time || '';
+      document.getElementById('stage').value = m.stage || 'Group Stage';
+      document.getElementById('venue').value = m.venue || '';
+      document.getElementById('danielHome').value = m.daniel_score_home ?? 1;
+      document.getElementById('danielAway').value = m.daniel_score_away ?? 1;
+      document.getElementById('danielQuote').value = m.daniel_quote || '';
+      document.getElementById('rewardText').value = m.reward_text || '';
+      document.getElementById('isActive').checked = m.is_active || false;
+
+      if (m.closes_at) {
+        const dt = new Date(m.closes_at);
+        const pad = n => String(n).padStart(2, '0');
+        document.getElementById('closesAt').value =
+          `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+      } else {
+        document.getElementById('closesAt').value = '';
+      }
+
+      document.getElementById('matchFormTitle').textContent = 'Edit match';
+      document.getElementById('saveMatchBtn').textContent = 'Save changes';
+      document.getElementById('cancelEditBtn').style.display = 'block';
+      document.getElementById('matchSuccess').style.display = 'none';
+      document.getElementById('matchError').style.display = 'none';
+      document.getElementById('matchFormTitle').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function newMatch() {
+      editMatchId = null;
+      document.getElementById('teamHome').value = '';
+      document.getElementById('teamAway').value = '';
+      document.getElementById('flagHome').value = '';
+      document.getElementById('flagAway').value = '';
+      document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('kickoffTime').value = '';
+      document.getElementById('stage').value = 'Group Stage';
+      document.getElementById('venue').value = '';
+      document.getElementById('danielHome').value = 1;
+      document.getElementById('danielAway').value = 1;
+      document.getElementById('danielQuote').value = '';
+      document.getElementById('rewardText').value = '';
+      document.getElementById('isActive').checked = true;
+      document.getElementById('closesAt').value = '';
+      document.getElementById('matchFormTitle').textContent = 'Set today\'s match';
+      document.getElementById('saveMatchBtn').textContent = 'Save match';
+      document.getElementById('cancelEditBtn').style.display = 'none';
+      document.getElementById('matchSuccess').style.display = 'none';
+      document.getElementById('matchError').style.display = 'none';
+    }
+
+    async function deleteMatch(id) {
+      const m = matchesData.find(x => x.id === id);
+      const label = m ? `${m.team_home} vs ${m.team_away} (${m.match_date})` : 'this match';
+      if (!confirm(`Delete ${label}?\n\nThis will also delete all predictions for this match.`)) return;
+
+      const { error } = await client.from('matches').delete().eq('id', id);
+      if (error) {
+        alert('Error deleting match: ' + error.message);
+      } else {
+        if (editMatchId === id) newMatch();
+        loadStats();
+        loadMatches();
+      }
     }
 
     async function saveMatch() {
@@ -504,25 +593,34 @@
         daniel_quote: document.getElementById('danielQuote').value,
         reward_text: document.getElementById('rewardText').value,
         is_active: document.getElementById('isActive').checked,
-        is_finished: false
+        closes_at: document.getElementById('closesAt').value || null
       };
+
+      if (!editMatchId) payload.is_finished = false;
 
       if (!payload.team_home || !payload.team_away || !payload.match_date) {
         document.getElementById('matchError').textContent = 'Please fill in team names and date.';
         document.getElementById('matchError').style.display = 'block';
         btn.disabled = false;
-        btn.textContent = 'Save match';
+        btn.textContent = editMatchId ? 'Save changes' : 'Save match';
         return;
       }
 
       if (payload.is_active) {
-        await client.from('matches').update({ is_active: false }).eq('is_active', true);
+        let q = client.from('matches').update({ is_active: false }).eq('is_active', true);
+        if (editMatchId) q = q.neq('id', editMatchId);
+        await q;
       }
 
-      const { error } = await client.from('matches').insert(payload);
+      let error;
+      if (editMatchId) {
+        ({ error } = await client.from('matches').update(payload).eq('id', editMatchId));
+      } else {
+        ({ error } = await client.from('matches').insert(payload));
+      }
 
       btn.disabled = false;
-      btn.textContent = 'Save match';
+      btn.textContent = editMatchId ? 'Save changes' : 'Save match';
 
       if (error) {
         document.getElementById('matchError').textContent = error.message;

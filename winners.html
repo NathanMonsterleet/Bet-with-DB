@@ -8,7 +8,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Outfit', sans-serif; background: #f7f5f0; min-height: 100vh; padding: 32px 16px; }
-    .container { max-width: 640px; margin: 0 auto; }
+    .container { max-width: 700px; margin: 0 auto; }
     h1 { font-family: 'Cormorant Garamond', serif; font-size: 28px; color: #1a1a1a; margin-bottom: 24px; }
     h1 em { font-style: italic; color: #b08d3e; }
     .box { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 2px 20px rgba(0,0,0,0.06); margin-bottom: 20px; }
@@ -21,10 +21,16 @@
     .match-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: #1a1a1a; }
     .match-meta { font-size: 12px; color: #aaa; margin: 4px 0 10px; }
     .match-result { font-size: 13px; color: #b08d3e; font-weight: 500; margin-bottom: 8px; }
-    .winner-row { font-size: 13px; color: #333; padding: 4px 0; }
+    .winner-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; }
+    .winner-info { font-size: 13px; color: #333; }
     .no-winners { font-size: 13px; color: #aaa; font-style: italic; }
     a { font-size: 13px; color: #b08d3e; text-decoration: none; }
     .btn-csv { width: auto; padding: 8px 16px; background: #b08d3e; font-size: 13px; border-radius: 8px; cursor: pointer; }
+    .btn-delete { width: auto; padding: 3px 10px; font-size: 11px; border-radius: 6px; border: 1px solid #fecaca; background: #fff; color: #dc2626; cursor: pointer; font-family: inherit; font-weight: 400; flex-shrink: 0; }
+    .filter-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-bar select { padding: 8px 12px; border: 1px solid #e8e3da; border-radius: 9px; font-family: 'Outfit', sans-serif; font-size: 13px; color: #1a1a1a; background: #fff; outline: none; cursor: pointer; }
+    .filter-bar select:focus { border-color: #b08d3e; }
+    .filter-count { font-size: 12px; color: #aaa; margin-left: auto; }
   </style>
 </head>
 <body>
@@ -39,13 +45,28 @@
   </div>
 
   <div id="main" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #e8e3da;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #e8e3da;">
       <h1 style="margin-bottom:0;">Winners <em>board</em></h1>
       <div style="display:flex;gap:12px;align-items:center;">
         <button class="btn-csv" onclick="exportCSV()">Export CSV</button>
         <a href="/admin">← Admin</a>
       </div>
     </div>
+
+    <div class="filter-bar">
+      <select id="filterRestaurant" onchange="renderWinners()">
+        <option value="">All restaurants</option>
+        <option>La Tête D'Or</option>
+        <option>Café Boulud at Maison Barnes</option>
+        <option>Le Pavillon</option>
+        <option>Le Gratin</option>
+      </select>
+      <select id="filterMatch" onchange="renderWinners()">
+        <option value="">All matches</option>
+      </select>
+      <span class="filter-count" id="filterCount"></span>
+    </div>
+
     <div class="box" id="output">Loading…</div>
   </div>
 
@@ -54,6 +75,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/config.js"></script>
 <script>
+  let client;
+  let allWinnersData = [];
+
   function checkPassword() {
     const pw = document.getElementById('pw').value;
     if (pw === 'dinex2026') {
@@ -69,12 +93,10 @@
     if (e.key === 'Enter') checkPassword();
   });
 
-  let allWinners = [];
-
   async function loadWinners() {
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const output = document.getElementById('output');
-    allWinners = [];
+    allWinnersData = [];
 
     const { data: matches, error } = await client
       .from('matches')
@@ -84,7 +106,13 @@
     if (error) { output.textContent = 'Error: ' + error.message; return; }
     if (!matches || matches.length === 0) { output.textContent = 'No matches found.'; return; }
 
-    output.innerHTML = '';
+    const matchSel = document.getElementById('filterMatch');
+    matches.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = `${m.team_home} vs ${m.team_away}${m.match_date ? ' · ' + m.match_date : ''}`;
+      matchSel.appendChild(opt);
+    });
 
     for (const m of matches) {
       const { data: preds } = await client
@@ -93,28 +121,91 @@
         .eq('match_id', m.id)
         .eq('is_winner', true);
 
-      const winners = preds || [];
-      const result = m.actual_score_home !== null ? `${m.actual_score_home} – ${m.actual_score_away}` : 'Pending';
-      winners.forEach(w => allWinners.push({ match: `${m.team_home} vs ${m.team_away}`, date: m.match_date || '', name: w.guest_name || '', email: w.guest_email || '', restaurant: w.restaurant || '', pick: `${w.score_home}–${w.score_away}` }));
+      (preds || []).forEach(w => allWinnersData.push({
+        id: w.id,
+        match_id: String(m.id),
+        matchLabel: `${m.team_home} vs ${m.team_away}`,
+        flag_home: m.flag_home || '',
+        flag_away: m.flag_away || '',
+        team_home: m.team_home,
+        team_away: m.team_away,
+        date: m.match_date || '',
+        stage: m.stage || '',
+        result: m.actual_score_home !== null ? `${m.actual_score_home} – ${m.actual_score_away}` : 'Pending',
+        guest_name: w.guest_name || '',
+        guest_email: w.guest_email || '',
+        restaurant: w.restaurant || '',
+        score_home: w.score_home,
+        score_away: w.score_away
+      }));
+    }
 
+    renderWinners();
+  }
+
+  function getFiltered() {
+    const restaurant = document.getElementById('filterRestaurant').value;
+    const matchId = document.getElementById('filterMatch').value;
+    return allWinnersData.filter(w =>
+      (!restaurant || w.restaurant === restaurant) &&
+      (!matchId || w.match_id === String(matchId))
+    );
+  }
+
+  function renderWinners() {
+    const filtered = getFiltered();
+    const output = document.getElementById('output');
+    document.getElementById('filterCount').textContent =
+      filtered.length + ' winner' + (filtered.length !== 1 ? 's' : '');
+
+    if (filtered.length === 0) {
+      output.innerHTML = '<div style="text-align:center;padding:16px;font-size:13px;color:#aaa;font-style:italic;">No winners match the current filters.</div>';
+      return;
+    }
+
+    const groups = {};
+    const order = [];
+    filtered.forEach(w => {
+      if (!groups[w.match_id]) { groups[w.match_id] = []; order.push(w.match_id); }
+      groups[w.match_id].push(w);
+    });
+
+    output.innerHTML = '';
+    order.forEach(mid => {
+      const winners = groups[mid];
+      const first = winners[0];
       const div = document.createElement('div');
       div.className = 'match';
       div.innerHTML = `
-        <div class="match-title">${m.flag_home || ''} ${m.team_home} vs ${m.team_away} ${m.flag_away || ''}</div>
-        <div class="match-meta">${m.match_date || ''} · ${m.stage || ''}</div>
-        <div class="match-result">Result: ${result}</div>
-        ${winners.length
-          ? winners.map(w => `<div class="winner-row">🏆 ${w.guest_name} (${w.guest_email}) — ${w.restaurant} — picked ${w.score_home}–${w.score_away}</div>`).join('')
-          : '<div class="no-winners">No winners</div>'
-        }`;
+        <div class="match-title">${first.flag_home} ${first.team_home} vs ${first.team_away} ${first.flag_away}</div>
+        <div class="match-meta">${first.date}${first.stage ? ' · ' + first.stage : ''}</div>
+        <div class="match-result">Result: ${first.result}</div>
+        ${winners.map(w => `
+          <div class="winner-row">
+            <span class="winner-info">🏆 ${w.guest_name} (${w.guest_email}) — ${w.restaurant} — picked ${w.score_home}–${w.score_away}</span>
+            <button class="btn-delete" onclick="deleteWinner('${w.id}')">Delete</button>
+          </div>`).join('')}`;
       output.appendChild(div);
-    }
+    });
+  }
+
+  async function deleteWinner(id) {
+    const w = allWinnersData.find(x => String(x.id) === String(id));
+    const label = w ? `${w.guest_name} (${w.guest_email})` : 'this winner';
+    if (!confirm(`Delete ${label} from the winners list?\n\nThis permanently removes their prediction.`)) return;
+
+    const { error } = await client.from('predictions').delete().eq('id', id);
+    if (error) { alert('Error: ' + error.message); return; }
+
+    allWinnersData = allWinnersData.filter(x => String(x.id) !== String(id));
+    renderWinners();
   }
 
   function exportCSV() {
-    if (!allWinners.length) { alert('No winners to export.'); return; }
+    const filtered = getFiltered();
+    if (!filtered.length) { alert('No winners to export.'); return; }
     const rows = [['Match', 'Date', 'Name', 'Email', 'Restaurant', 'Pick']];
-    allWinners.forEach(w => rows.push([w.match, w.date, w.name, w.email, w.restaurant, w.pick]));
+    filtered.forEach(w => rows.push([w.matchLabel, w.date, w.guest_name, w.guest_email, w.restaurant, `${w.score_home}–${w.score_away}`]));
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);

@@ -453,6 +453,29 @@
     }
     #noMatch p { font-size: 14px; color: #888; font-weight: 300; }
 
+    #countdownState { display: none; text-align: center; padding: 48px 24px; }
+    #countdownState .countdown-label {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #b08d3e;
+      font-weight: 500;
+      margin-bottom: 14px;
+    }
+    #countdownState .countdown-timer {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 48px;
+      font-weight: 600;
+      color: #1a1a1a;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    #countdownState .countdown-match {
+      font-size: 14px;
+      color: #888;
+      font-weight: 300;
+    }
+
     #loadingState { text-align: center; padding: 48px 24px; color: #aaa; font-size: 14px; }
 
     .footer-txt {
@@ -485,6 +508,12 @@
     <div id="closedState" style="display:none; text-align:center; padding:48px 24px;">
       <div class="no-match-title">Predictions are now closed</div>
       <p>The prediction window for this match has ended.<br>Check back for the next game.</p>
+    </div>
+
+    <div id="countdownState">
+      <div class="countdown-label">✦ &nbsp;Next match opens in&nbsp; ✦</div>
+      <div class="countdown-timer" id="countdownTimer">—</div>
+      <div class="countdown-match" id="countdownMatch"></div>
     </div>
 
     <div id="mainForm" style="display:none;">
@@ -653,14 +682,45 @@
       }
 
       activeMatch = data;
+      const now = new Date();
 
-      if (data.closes_at && new Date() > new Date(data.closes_at)) {
+      if (data.closes_at && now > new Date(data.closes_at)) {
         document.getElementById('closedState').style.display = 'block';
         return;
       }
 
-      document.getElementById('mainForm').style.display = 'block';
+      if (data.opens_at && now < new Date(data.opens_at)) {
+        document.getElementById('countdownMatch').textContent =
+          `${data.flag_home || ''} ${data.team_home} vs ${data.team_away} ${data.flag_away || ''}`.trim();
+        startCountdown(new Date(data.opens_at), data);
+        return;
+      }
 
+      showForm(data);
+    }
+
+    function startCountdown(opensAt, data) {
+      document.getElementById('countdownState').style.display = 'block';
+
+      function tick() {
+        const diff = opensAt - new Date();
+        if (diff <= 0) {
+          document.getElementById('countdownState').style.display = 'none';
+          showForm(data);
+          return;
+        }
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        document.getElementById('countdownTimer').textContent =
+          h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+        setTimeout(tick, 1000);
+      }
+      tick();
+    }
+
+    function showForm(data) {
+      document.getElementById('mainForm').style.display = 'block';
       document.getElementById('flagHome').textContent = data.flag_home || '🏳️';
       document.getElementById('flagAway').textContent = data.flag_away || '🏳️';
       document.getElementById('teamHome').textContent = data.team_home;

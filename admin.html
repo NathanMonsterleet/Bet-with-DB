@@ -322,7 +322,11 @@
 
         <div class="grid-2 section-gap">
           <div class="field">
-            <label>Predictions close at</label>
+            <label>Opens at</label>
+            <input type="datetime-local" id="opensAt" />
+          </div>
+          <div class="field">
+            <label>Closes at</label>
             <input type="datetime-local" id="closesAt" />
           </div>
         </div>
@@ -519,14 +523,14 @@
       document.getElementById('rewardText').value = m.reward_text || '';
       document.getElementById('isActive').checked = m.is_active || false;
 
-      if (m.closes_at) {
-        const dt = new Date(m.closes_at);
+      const fmtDt = iso => {
+        if (!iso) return '';
+        const dt = new Date(iso);
         const pad = n => String(n).padStart(2, '0');
-        document.getElementById('closesAt').value =
-          `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-      } else {
-        document.getElementById('closesAt').value = '';
-      }
+        return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+      };
+      document.getElementById('opensAt').value = fmtDt(m.opens_at);
+      document.getElementById('closesAt').value = fmtDt(m.closes_at);
 
       document.getElementById('matchFormTitle').textContent = 'Edit match';
       document.getElementById('saveMatchBtn').textContent = 'Save changes';
@@ -551,6 +555,7 @@
       document.getElementById('danielQuote').value = '';
       document.getElementById('rewardText').value = '';
       document.getElementById('isActive').checked = true;
+      document.getElementById('opensAt').value = '';
       document.getElementById('closesAt').value = '';
       document.getElementById('matchFormTitle').textContent = 'Set today\'s match';
       document.getElementById('saveMatchBtn').textContent = 'Save match';
@@ -593,6 +598,7 @@
         daniel_quote: document.getElementById('danielQuote').value,
         reward_text: document.getElementById('rewardText').value,
         is_active: document.getElementById('isActive').checked,
+        opens_at: document.getElementById('opensAt').value || null,
         closes_at: document.getElementById('closesAt').value || null
       };
 

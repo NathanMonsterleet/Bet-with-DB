@@ -599,7 +599,13 @@
         reward_text: document.getElementById('rewardText').value,
         is_active: document.getElementById('isActive').checked,
         opens_at: document.getElementById('opensAt').value || null,
-        closes_at: document.getElementById('closesAt').value || null
+        closes_at: (() => {
+          const v = document.getElementById('closesAt').value;
+          if (!v) return null;
+          // Don't apply a past closes_at to an active match — it would immediately lock guests out
+          if (document.getElementById('isActive').checked && new Date(v) < new Date()) return null;
+          return v;
+        })()
       };
 
       if (!editMatchId) payload.is_finished = false;

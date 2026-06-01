@@ -290,11 +290,11 @@
         <div class="grid-2 section-gap">
           <div class="field">
             <label>Home team</label>
-            <input type="text" id="teamHome" placeholder="e.g. France" />
+            <input type="text" id="teamHome" placeholder="e.g. France" oninput="autoFlag('Home')" />
           </div>
           <div class="field">
             <label>Away team</label>
-            <input type="text" id="teamAway" placeholder="e.g. Brazil" />
+            <input type="text" id="teamAway" placeholder="e.g. Brazil" oninput="autoFlag('Away')" />
           </div>
         </div>
 
@@ -426,6 +426,37 @@
     const { createClient } = supabase;
     const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const ADMIN_PASSWORD = 'dinex2026';
+
+    const FLAG_MAP = {
+      'albania': '🇦🇱', 'algeria': '🇩🇿', 'angola': '🇦🇴', 'argentina': '🇦🇷',
+      'australia': '🇦🇺', 'austria': '🇦🇹', 'bahrain': '🇧🇭', 'belgium': '🇧🇪',
+      'bolivia': '🇧🇴', 'brazil': '🇧🇷', 'cameroon': '🇨🇲', 'canada': '🇨🇦',
+      'chile': '🇨🇱', 'china': '🇨🇳', 'colombia': '🇨🇴', 'congo': '🇨🇩',
+      'costa rica': '🇨🇷', 'croatia': '🇭🇷', 'cuba': '🇨🇺', 'czech republic': '🇨🇿',
+      'czechia': '🇨🇿', 'denmark': '🇩🇰', 'ecuador': '🇪🇨', 'egypt': '🇪🇬',
+      'england': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'france': '🇫🇷', 'germany': '🇩🇪', 'ghana': '🇬🇭',
+      'greece': '🇬🇷', 'guatemala': '🇬🇹', 'honduras': '🇭🇳', 'hungary': '🇭🇺',
+      'indonesia': '🇮🇩', 'iran': '🇮🇷', 'iraq': '🇮🇶', 'israel': '🇮🇱',
+      'italy': '🇮🇹', "côte d'ivoire": '🇨🇮', 'ivory coast': '🇨🇮',
+      'jamaica': '🇯🇲', 'japan': '🇯🇵', 'jordan': '🇯🇴', 'kenya': '🇰🇪',
+      'mali': '🇲🇱', 'mexico': '🇲🇽', 'morocco': '🇲🇦', 'mozambique': '🇲🇿',
+      'netherlands': '🇳🇱', 'new zealand': '🇳🇿', 'nigeria': '🇳🇬', 'norway': '🇳🇴',
+      'oman': '🇴🇲', 'panama': '🇵🇦', 'paraguay': '🇵🇾', 'peru': '🇵🇪',
+      'poland': '🇵🇱', 'portugal': '🇵🇹', 'qatar': '🇶🇦', 'romania': '🇷🇴',
+      'saudi arabia': '🇸🇦', 'scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿', 'senegal': '🇸🇳',
+      'serbia': '🇷🇸', 'slovakia': '🇸🇰', 'slovenia': '🇸🇮', 'south africa': '🇿🇦',
+      'south korea': '🇰🇷', 'korea': '🇰🇷', 'spain': '🇪🇸', 'sweden': '🇸🇪',
+      'switzerland': '🇨🇭', 'tunisia': '🇹🇳', 'turkey': '🇹🇷', 'türkiye': '🇹🇷',
+      'ukraine': '🇺🇦', 'uruguay': '🇺🇾', 'usa': '🇺🇸', 'united states': '🇺🇸',
+      'venezuela': '🇻🇪', 'wales': '🏴󠁧󠁢󠁷󠁬󠁳󠁿', 'zambia': '🇿🇲',
+    };
+
+    function autoFlag(side) {
+      const name = document.getElementById('team' + side).value.trim().toLowerCase();
+      const flag = FLAG_MAP[name];
+      if (flag) document.getElementById('flag' + side).value = flag;
+    }
+
     let editMatchId = null;
     let matchesData = [];
 

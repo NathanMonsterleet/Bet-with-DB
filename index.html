@@ -524,12 +524,12 @@
         <div class="match-card">
           <div class="teams-row">
             <div class="team">
-              <div class="flag" id="flagHome">🏳️</div>
+              <div class="flag" id="flagHome"></div>
               <div class="team-name" id="teamHome">—</div>
             </div>
             <div class="vs">vs</div>
             <div class="team">
-              <div class="flag" id="flagAway">🏳️</div>
+              <div class="flag" id="flagAway"></div>
               <div class="team-name" id="teamAway">—</div>
             </div>
           </div>
@@ -721,8 +721,8 @@
 
     function showForm(data) {
       document.getElementById('mainForm').style.display = 'block';
-      document.getElementById('flagHome').textContent = data.flag_home || '🏳️';
-      document.getElementById('flagAway').textContent = data.flag_away || '🏳️';
+      document.getElementById('flagHome').textContent = data.flag_home || '';
+      document.getElementById('flagAway').textContent = data.flag_away || '';
       document.getElementById('teamHome').textContent = data.team_home;
       document.getElementById('teamAway').textContent = data.team_away;
       document.getElementById('scoreLabelHome').textContent = data.team_home;

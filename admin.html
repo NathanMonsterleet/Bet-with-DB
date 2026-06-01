@@ -475,6 +475,13 @@
       const list = document.getElementById('matchList');
       matchesData = data || [];
 
+      // Auto-fix: if the active match has a closes_at in the past, clear it so guests aren't locked out
+      const stale = (data || []).find(m => m.is_active && m.closes_at && new Date(m.closes_at) < new Date());
+      if (stale) {
+        await client.from('matches').update({ closes_at: null }).eq('id', stale.id);
+        stale.closes_at = null;
+      }
+
       if (!data || data.length === 0) {
         list.innerHTML = '<div style="font-size:13px;color:#aaa;">No matches yet.</div>';
         return;

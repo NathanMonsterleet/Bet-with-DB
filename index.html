@@ -478,6 +478,69 @@
 
     #loadingState { text-align: center; padding: 48px 24px; color: #aaa; font-size: 14px; }
 
+    .schedule-section {
+      padding: 0 24px;
+      border-bottom: 1px solid #ebebeb;
+    }
+
+    .schedule-header {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #aaa;
+      font-weight: 500;
+      padding: 16px 0 10px;
+    }
+
+    .schedule-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      scrollbar-width: none;
+    }
+    .schedule-scroll::-webkit-scrollbar { display: none; }
+
+    .sched-card {
+      flex-shrink: 0;
+      background: #fafafa;
+      border: 1px solid #ebebeb;
+      border-radius: 10px;
+      padding: 10px 12px;
+      text-align: center;
+      min-width: 64px;
+      transition: opacity 0.15s;
+    }
+
+    .sched-card.past { opacity: 0.35; }
+
+    .sched-card.active {
+      border-color: #e8d9b0;
+      background: #fdf9f1;
+    }
+
+    .sched-date {
+      font-size: 10px;
+      color: #aaa;
+      letter-spacing: 0.04em;
+      margin-bottom: 5px;
+      white-space: nowrap;
+    }
+
+    .sched-card.active .sched-date { color: #b08d3e; }
+
+    .sched-flags { font-size: 18px; line-height: 1; margin-bottom: 5px; }
+
+    .sched-stage {
+      font-size: 9px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #bbb;
+      white-space: nowrap;
+    }
+
+    .sched-card.active .sched-stage { color: #b08d3e; }
+
     .footer-txt {
       text-align: center;
       font-size: 10px;
@@ -496,6 +559,11 @@
       <div class="hero-eyebrow">The Chef's Challenge</div>
       <h1>Bet with<br><em>Daniel Boulud</em></h1>
       <p class="hero-sub">Predict the score. Beat the chef.</p>
+    </div>
+
+    <div class="schedule-section">
+      <div class="schedule-header">The 10 matches</div>
+      <div class="schedule-scroll" id="scheduleStrip"></div>
     </div>
 
     <div id="loadingState">Loading today's match…</div>
@@ -668,6 +736,45 @@
 
     let activeMatch = null;
 
+    const SCHEDULE = [
+      { date: '2026-06-13', short: 'Jun 13', fh: '🇧🇷', fa: '🇲🇦', stage: 'Group' },
+      { date: '2026-06-16', short: 'Jun 16', fh: '🇫🇷', fa: '🇸🇳', stage: 'Group' },
+      { date: '2026-06-22', short: 'Jun 22', fh: '🇳🇴', fa: '🇸🇳', stage: 'Group' },
+      { date: '2026-06-25', short: 'Jun 25', fh: '🇪🇨', fa: '🇩🇪', stage: 'Group' },
+      { date: '2026-06-27', short: 'Jun 27', fh: '🇵🇦', fa: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', stage: 'Group' },
+      { date: '2026-06-30', short: 'Jun 30', fh: null,  fa: null,  stage: 'R32' },
+      { date: '2026-07-05', short: 'Jul 5',  fh: null,  fa: null,  stage: 'R16' },
+      { date: '2026-07-14', short: 'Jul 14', fh: null,  fa: null,  stage: 'Semi' },
+      { date: '2026-07-15', short: 'Jul 15', fh: null,  fa: null,  stage: 'Semi' },
+      { date: '2026-07-19', short: 'Jul 19', fh: null,  fa: null,  stage: 'Final' },
+    ];
+
+    function renderSchedule() {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+      document.getElementById('scheduleStrip').innerHTML = SCHEDULE.map(g => {
+        const flags = g.fh ? `${g.fh} ${g.fa}` : '⚽ ⚽';
+        const cls = g.date < todayStr ? 'past' : '';
+        return `<div class="sched-card ${cls}" data-date="${g.date}">
+          <div class="sched-date">${g.short}</div>
+          <div class="sched-flags">${flags}</div>
+          <div class="sched-stage">${g.stage}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function highlightSchedule() {
+      if (!activeMatch) return;
+      document.querySelectorAll('.sched-card').forEach(card => {
+        if (card.dataset.date === activeMatch.match_date) {
+          card.classList.add('active');
+          card.classList.remove('past');
+        }
+      });
+    }
+
+    renderSchedule();
+
     async function loadMatch() {
       const { data, error } = await client
         .from('matches')
@@ -683,6 +790,7 @@
       }
 
       activeMatch = data;
+      highlightSchedule();
       const now = new Date();
 
       if (data.closes_at && now > new Date(data.closes_at)) {

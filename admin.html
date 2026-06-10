@@ -284,6 +284,19 @@
         </div>
       </div>
 
+      <div class="card" id="quickControlCard" style="display:none;">
+        <div class="card-title">Predictions window</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+          <div>
+            <div style="font-size:14px;font-weight:500;color:#1a1a1a;" id="qcMatchLabel">—</div>
+            <div style="font-size:12px;margin-top:4px;" id="qcStatus">—</div>
+          </div>
+          <button class="btn" id="qcBtn" onclick="togglePredictions()" style="width:auto;padding:10px 20px;white-space:nowrap;">—</button>
+        </div>
+        <div class="success-msg" id="qcSuccess">Saved!</div>
+        <div class="error-msg" id="qcError">Something went wrong.</div>
+      </div>
+
       <div class="card">
         <div class="card-title" id="matchFormTitle">Set today's match</div>
 
@@ -322,11 +335,11 @@
 
         <div class="grid-2 section-gap">
           <div class="field">
-            <label>Opens at</label>
+            <label>Opens at (NYC)</label>
             <input type="datetime-local" id="opensAt" />
           </div>
           <div class="field">
-            <label>Closes at</label>
+            <label>Closes at (NYC)</label>
             <input type="datetime-local" id="closesAt" />
           </div>
         </div>
@@ -427,6 +440,39 @@
     const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const ADMIN_PASSWORD = 'dinex2026';
 
+    // All open/close times are entered and displayed as America/New_York, stored as UTC
+    function nyToUtc(v) {
+      if (!v) return null;
+      const [datePart, timePart] = v.split('T');
+      const [yr, mo, dy] = datePart.split('-').map(Number);
+      const [hr, mn] = (timePart || '00:00').split(':').map(Number);
+      // Treat input as UTC first to get the right DST context for NY
+      const approx = new Date(Date.UTC(yr, mo - 1, dy, hr, mn));
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(approx);
+      const nycH = parseInt(parts.find(p => p.type === 'hour').value);
+      const nycM = parseInt(parts.find(p => p.type === 'minute').value);
+      let diff = (hr * 60 + mn) - (nycH * 60 + nycM);
+      if (diff > 720) diff -= 1440;
+      if (diff < -720) diff += 1440;
+      return new Date(approx.getTime() + diff * 60000).toISOString();
+    }
+
+    function utcToNyLocal(iso) {
+      if (!iso) return '';
+      const dt = new Date(iso);
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(dt);
+      const get = t => parts.find(p => p.type === t).value.padStart(2, '0');
+      return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+    }
+
     const FLAG_MAP = {
       'albania': '🇦🇱', 'algeria': '🇩🇿', 'angola': '🇦🇴', 'argentina': '🇦🇷',
       'australia': '🇦🇺', 'austria': '🇦🇹', 'bahrain': '🇧🇭', 'belgium': '🇧🇪',
@@ -497,6 +543,47 @@
       document.getElementById('statWinners').textContent = winners || 0;
     }
 
+    function updateQuickControl() {
+      const active = matchesData.find(m => m.is_active);
+      const card = document.getElementById('quickControlCard');
+      if (!active) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+
+      const isClosed = active.closes_at && new Date(active.closes_at) <= new Date();
+      document.getElementById('qcMatchLabel').textContent = `${active.flag_home || ''} ${active.team_home} vs ${active.team_away} ${active.flag_away || ''}`.trim();
+      const statusEl = document.getElementById('qcStatus');
+      statusEl.textContent = isClosed ? 'Predictions are closed' : 'Predictions are open';
+      statusEl.style.color = isClosed ? '#dc2626' : '#166534';
+      const btn = document.getElementById('qcBtn');
+      btn.textContent = isClosed ? 'Reopen predictions' : 'Close predictions now';
+      btn.style.background = isClosed ? '#b08d3e' : '#dc2626';
+      btn.style.color = '#fff';
+    }
+
+    async function togglePredictions() {
+      const active = matchesData.find(m => m.is_active);
+      if (!active) return;
+      const btn = document.getElementById('qcBtn');
+      btn.disabled = true;
+
+      const isClosed = active.closes_at && new Date(active.closes_at) <= new Date();
+      const newClosesAt = isClosed ? null : new Date().toISOString();
+
+      const { error } = await client.from('matches').update({ closes_at: newClosesAt }).eq('id', active.id);
+      btn.disabled = false;
+
+      if (error) {
+        document.getElementById('qcError').style.display = 'block';
+        setTimeout(() => document.getElementById('qcError').style.display = 'none', 3000);
+      } else {
+        active.closes_at = newClosesAt;
+        document.getElementById('qcSuccess').style.display = 'block';
+        setTimeout(() => document.getElementById('qcSuccess').style.display = 'none', 3000);
+        updateQuickControl();
+        loadStats();
+      }
+    }
+
     async function loadMatches() {
       const { data } = await client
         .from('matches')
@@ -505,13 +592,7 @@
 
       const list = document.getElementById('matchList');
       matchesData = data || [];
-
-      // Auto-fix: if the active match has a closes_at in the past, clear it so guests aren't locked out
-      const stale = (data || []).find(m => m.is_active && m.closes_at && new Date(m.closes_at) < new Date());
-      if (stale) {
-        await client.from('matches').update({ closes_at: null }).eq('id', stale.id);
-        stale.closes_at = null;
-      }
+      updateQuickControl();
 
       if (!data || data.length === 0) {
         list.innerHTML = '<div style="font-size:13px;color:#aaa;">No matches yet.</div>';
@@ -561,12 +642,7 @@
       document.getElementById('rewardText').value = m.reward_text || '';
       document.getElementById('isActive').checked = m.is_active || false;
 
-      const fmtDt = iso => {
-        if (!iso) return '';
-        const dt = new Date(iso);
-        const pad = n => String(n).padStart(2, '0');
-        return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-      };
+      const fmtDt = utcToNyLocal;
       document.getElementById('opensAt').value = fmtDt(m.opens_at);
       document.getElementById('closesAt').value = fmtDt(m.closes_at);
 
@@ -636,13 +712,13 @@
         daniel_quote: document.getElementById('danielQuote').value,
         reward_text: document.getElementById('rewardText').value,
         is_active: document.getElementById('isActive').checked,
-        opens_at: document.getElementById('opensAt').value || null,
+        opens_at: nyToUtc(document.getElementById('opensAt').value),
         closes_at: (() => {
           const v = document.getElementById('closesAt').value;
           if (!v) return null;
           // Don't apply a past closes_at to an active match — it would immediately lock guests out
-          if (document.getElementById('isActive').checked && new Date(v) < new Date()) return null;
-          return v;
+          if (document.getElementById('isActive').checked && new Date(nyToUtc(v)) < new Date()) return null;
+          return nyToUtc(v);
         })()
       };
 

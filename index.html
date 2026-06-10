@@ -490,7 +490,7 @@
 </head>
 <body>
   <div class="w">
-    <div class="top-bar">Dinex Group &nbsp;·&nbsp; FIFA World Cup 2026</div>
+    <div class="top-bar">Dinex Group</div>
 
     <div class="hero">
       <div class="hero-eyebrow">The Chef's Challenge</div>
@@ -732,6 +732,16 @@
       document.getElementById('matchStage').textContent = data.stage || '';
       document.getElementById('prizeStage').textContent = 'Prize · ' + (data.stage || '');
       document.getElementById('prizeReward').textContent = data.reward_text || '';
+
+      if (data.closes_at) {
+        const msLeft = new Date(data.closes_at) - new Date();
+        if (msLeft > 0) {
+          setTimeout(() => {
+            document.getElementById('mainForm').style.display = 'none';
+            document.getElementById('closedState').style.display = 'block';
+          }, msLeft);
+        }
+      }
     }
 
     function adj(id, delta) {

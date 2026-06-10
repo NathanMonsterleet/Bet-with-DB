@@ -512,11 +512,23 @@
       transition: opacity 0.15s;
     }
 
-    .sched-card.past { opacity: 0.35; }
-
-    .sched-card.active {
+    .sched-card.past {
       border-color: #e8d9b0;
       background: #fdf9f1;
+    }
+
+    .sched-card.active {
+      border-color: #b08d3e;
+      background: #fdf9f1;
+      box-shadow: 0 0 0 2px rgba(176,141,62,0.15);
+    }
+
+    .sched-check {
+      font-size: 11px;
+      color: #b08d3e;
+      font-weight: 600;
+      margin-bottom: 3px;
+      line-height: 1;
     }
 
     .sched-date {
@@ -527,9 +539,11 @@
       white-space: nowrap;
     }
 
+    .sched-card.past .sched-date { color: #b08d3e; }
     .sched-card.active .sched-date { color: #b08d3e; }
 
     .sched-flags { font-size: 18px; line-height: 1; margin-bottom: 5px; }
+    .sched-card.past .sched-flags { opacity: 0.5; }
 
     .sched-stage {
       font-size: 9px;
@@ -539,6 +553,7 @@
       white-space: nowrap;
     }
 
+    .sched-card.past .sched-stage { color: #c9b97a; }
     .sched-card.active .sched-stage { color: #b08d3e; }
 
     .footer-txt {
@@ -745,6 +760,7 @@
         const flags = g.flag_home ? `${g.flag_home} ${g.flag_away || ''}` : '⚽ ⚽';
         const isPast = g.is_past || g.match_date < todayStr;
         return `<div class="sched-card ${isPast ? 'past' : ''}" data-date="${g.match_date}">
+          ${isPast ? '<div class="sched-check">✓</div>' : ''}
           <div class="sched-date">${g.short_date}</div>
           <div class="sched-flags">${flags}</div>
           <div class="sched-stage">${g.stage}</div>

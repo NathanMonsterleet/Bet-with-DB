@@ -549,15 +549,31 @@
       if (!active) { card.style.display = 'none'; return; }
       card.style.display = 'block';
 
-      const isClosed = active.closes_at && new Date(active.closes_at) <= new Date();
+      const now = new Date();
+      const isClosed = active.closes_at && new Date(active.closes_at) <= now;
+      const isCountdown = !isClosed && active.opens_at && new Date(active.opens_at) > now;
+
       document.getElementById('qcMatchLabel').textContent = `${active.flag_home || ''} ${active.team_home} vs ${active.team_away} ${active.flag_away || ''}`.trim();
       const statusEl = document.getElementById('qcStatus');
-      statusEl.textContent = isClosed ? 'Predictions are closed' : 'Predictions are open';
-      statusEl.style.color = isClosed ? '#dc2626' : '#166534';
       const btn = document.getElementById('qcBtn');
-      btn.textContent = isClosed ? 'Reopen predictions' : 'Close predictions now';
-      btn.style.background = isClosed ? '#b08d3e' : '#dc2626';
       btn.style.color = '#fff';
+
+      if (isClosed) {
+        statusEl.textContent = 'Predictions are closed';
+        statusEl.style.color = '#dc2626';
+        btn.textContent = 'Open predictions now';
+        btn.style.background = '#b08d3e';
+      } else if (isCountdown) {
+        statusEl.textContent = 'Waiting to open (countdown active)';
+        statusEl.style.color = '#b08d3e';
+        btn.textContent = 'Open predictions now';
+        btn.style.background = '#166534';
+      } else {
+        statusEl.textContent = 'Predictions are open';
+        statusEl.style.color = '#166534';
+        btn.textContent = 'Close predictions now';
+        btn.style.background = '#dc2626';
+      }
     }
 
     async function togglePredictions() {
@@ -566,20 +582,31 @@
       const btn = document.getElementById('qcBtn');
       btn.disabled = true;
 
-      const isClosed = active.closes_at && new Date(active.closes_at) <= new Date();
-      const newClosesAt = isClosed ? null : new Date().toISOString();
+      const now = new Date();
+      const isClosed = active.closes_at && new Date(active.closes_at) <= now;
+      const isCountdown = !isClosed && active.opens_at && new Date(active.opens_at) > now;
 
-      const { error } = await client.from('matches').update({ closes_at: newClosesAt }).eq('id', active.id);
+      let payload;
+      if (isClosed) {
+        payload = { closes_at: null };
+      } else if (isCountdown) {
+        payload = { opens_at: null };
+      } else {
+        payload = { closes_at: now.toISOString() };
+      }
+
+      const { error } = await client.from('matches').update(payload).eq('id', active.id);
       btn.disabled = false;
 
       if (error) {
         document.getElementById('qcError').style.display = 'block';
         setTimeout(() => document.getElementById('qcError').style.display = 'none', 3000);
       } else {
-        active.closes_at = newClosesAt;
+        Object.assign(active, payload);
         document.getElementById('qcSuccess').style.display = 'block';
         setTimeout(() => document.getElementById('qcSuccess').style.display = 'none', 3000);
         updateQuickControl();
+        loadMatches();
         loadStats();
       }
     }

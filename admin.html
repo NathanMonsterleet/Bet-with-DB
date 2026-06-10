@@ -907,6 +907,10 @@
             <button onclick="saveScheduleRow(${g.id})"
               style="margin-left:auto;padding:8px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">Save</button>
           </div>
+          <button onclick="setupFromSchedule(${g.id})"
+            style="width:100%;margin-top:8px;padding:9px;background:#fdf9f1;color:#b08d3e;border:1px solid #e8d9b0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">
+            Set up prediction →
+          </button>
           <div id="ssc-${g.id}" style="font-size:12px;color:#166534;margin-top:6px;display:none;">Saved!</div>
         </div>`).join('');
     }
@@ -933,6 +937,37 @@
         el.style.display = 'block';
         setTimeout(() => el.style.display = 'none', 2000);
       }
+    }
+
+    function setupFromSchedule(id) {
+      const g = scheduleData.find(x => x.id === id);
+      if (!g) return;
+
+      newMatch();
+
+      document.getElementById('teamHome').value = g.team_home || '';
+      document.getElementById('teamAway').value = g.team_away || '';
+      document.getElementById('flagHome').value = g.flag_home || '';
+      document.getElementById('flagAway').value = g.flag_away || '';
+      document.getElementById('matchDate').value = g.match_date || '';
+      document.getElementById('kickoffTime').value = g.kickoff_time || '';
+      document.getElementById('stage').value = g.stage || 'Group Stage';
+      document.getElementById('venue').value = g.venue || '';
+
+      // Auto-fill closes_at from kickoff time (predictions close at kickoff)
+      if (g.kickoff_time && g.match_date) {
+        const m = g.kickoff_time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (m) {
+          let h = parseInt(m[1]);
+          const min = m[2];
+          const ampm = m[3].toUpperCase();
+          if (ampm === 'PM' && h !== 12) h += 12;
+          if (ampm === 'AM' && h === 12) h = 0;
+          document.getElementById('closesAt').value = `${g.match_date}T${String(h).padStart(2,'0')}:${min}`;
+        }
+      }
+
+      document.getElementById('matchFormTitle').scrollIntoView({ behavior: 'smooth' });
     }
   </script>
 </body>

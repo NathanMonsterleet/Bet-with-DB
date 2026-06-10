@@ -601,12 +601,13 @@
 
       list.innerHTML = data.map(m => {
         let badge = '';
-        if (m.is_active) {
+        if (m.is_finished) badge = '<span class="badge badge-done">Finished</span>';
+        else if (m.is_active) {
           const predsClosed = m.closes_at && new Date(m.closes_at) <= new Date();
-          badge = '<span class="badge badge-active">Active</span>';
-          if (predsClosed) badge += ' <span class="badge" style="background:#fff5f5;color:#dc2626;border:1px solid #fecaca;">Predictions closed</span>';
-        } else if (m.is_finished) badge = '<span class="badge badge-done">Finished</span>';
-        else badge = '<span class="badge badge-pending">Pending</span>';
+          badge = predsClosed
+            ? '<span class="badge" style="background:#fff5f5;color:#dc2626;border:1px solid #fecaca;">Predictions closed</span>'
+            : '<span class="badge badge-active">Active</span>';
+        } else badge = '<span class="badge badge-pending">Pending</span>';
 
         const result = (m.actual_score_home !== null)
           ? ` · Result: ${m.actual_score_home}–${m.actual_score_away}` : '';

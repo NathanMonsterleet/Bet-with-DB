@@ -714,6 +714,8 @@
       const label = m ? `${m.team_home} vs ${m.team_away} (${m.match_date})` : 'this match';
       if (!confirm(`Delete ${label}?\n\nThis will also delete all predictions for this match.`)) return;
 
+      await client.from('predictions').delete().eq('match_id', id);
+
       const { error } = await client.from('matches').delete().eq('id', id);
       if (error) {
         alert('Error deleting match: ' + error.message);

@@ -135,6 +135,7 @@
         result: m.actual_score_home !== null ? `${m.actual_score_home} – ${m.actual_score_away}` : 'Pending',
         guest_name: w.guest_name || '',
         guest_email: w.guest_email || '',
+        guest_phone: w.guest_phone || '',
         restaurant: w.restaurant || '',
         score_home: w.score_home,
         score_away: w.score_away
@@ -183,7 +184,7 @@
         <div class="match-result">Result: ${first.result}</div>
         ${winners.map(w => `
           <div class="winner-row">
-            <span class="winner-info">🏆 ${w.guest_name} (${w.guest_email}) — ${w.restaurant} — picked ${w.score_home}–${w.score_away}</span>
+            <span class="winner-info">🏆 ${w.guest_name} (${w.guest_email}${w.guest_phone ? ' · ' + w.guest_phone : ''}) — ${w.restaurant} — picked ${w.score_home}–${w.score_away}</span>
             <button class="btn-delete" onclick="deleteWinner('${w.id}')">Delete</button>
           </div>`).join('')}`;
       output.appendChild(div);
@@ -205,8 +206,8 @@
   function exportCSV() {
     const filtered = getFiltered();
     if (!filtered.length) { alert('No winners to export.'); return; }
-    const rows = [['Match', 'Date', 'Name', 'Email', 'Restaurant', 'Pick']];
-    filtered.forEach(w => rows.push([w.matchLabel, w.date, w.guest_name, w.guest_email, w.restaurant, `${w.score_home}–${w.score_away}`]));
+    const rows = [['Match', 'Date', 'Name', 'Email', 'Phone', 'Restaurant', 'Pick']];
+    filtered.forEach(w => rows.push([w.matchLabel, w.date, w.guest_name, w.guest_email, w.guest_phone, w.restaurant, `${w.score_home}–${w.score_away}`]));
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);

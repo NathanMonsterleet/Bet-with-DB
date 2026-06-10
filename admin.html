@@ -383,9 +383,26 @@
 
         <div class="divider"></div>
 
+        <div class="card-title" style="border:none;margin-bottom:14px;padding:0;">Prize per restaurant</div>
         <div class="field">
-          <label>Prize / reward text</label>
-          <input type="text" id="rewardText" placeholder="e.g. Complimentary dessert for the table" />
+          <label>La Tête D'Or</label>
+          <input type="text" id="rewardTeteDor" placeholder="e.g. Complimentary dessert" />
+        </div>
+        <div class="field section-gap">
+          <label>Café Boulud at Maison Barnes</label>
+          <input type="text" id="rewardCafeBoulud" placeholder="e.g. Complimentary dessert" />
+        </div>
+        <div class="field section-gap">
+          <label>Le Pavillon</label>
+          <input type="text" id="rewardLePavillon" placeholder="e.g. Complimentary dessert" />
+        </div>
+        <div class="field section-gap">
+          <label>Le Gratin</label>
+          <input type="text" id="rewardLeGratin" placeholder="e.g. Complimentary dessert" />
+        </div>
+        <div class="field section-gap">
+          <label>Restaurant Daniel</label>
+          <input type="text" id="rewardRestaurantDaniel" placeholder="e.g. Complimentary dessert" />
         </div>
 
         <div class="toggle-row">
@@ -670,7 +687,11 @@
       document.getElementById('danielHome').value = m.daniel_score_home ?? 1;
       document.getElementById('danielAway').value = m.daniel_score_away ?? 1;
       document.getElementById('danielQuote').value = m.daniel_quote || '';
-      document.getElementById('rewardText').value = m.reward_text || '';
+      document.getElementById('rewardTeteDor').value = m.reward_tete_dor || '';
+      document.getElementById('rewardCafeBoulud').value = m.reward_cafe_boulud || '';
+      document.getElementById('rewardLePavillon').value = m.reward_le_pavillon || '';
+      document.getElementById('rewardLeGratin').value = m.reward_le_gratin || '';
+      document.getElementById('rewardRestaurantDaniel').value = m.reward_restaurant_daniel || '';
       document.getElementById('isActive').checked = m.is_active || false;
 
       const fmtDt = utcToNyLocal;
@@ -698,7 +719,11 @@
       document.getElementById('danielHome').value = 1;
       document.getElementById('danielAway').value = 1;
       document.getElementById('danielQuote').value = '';
-      document.getElementById('rewardText').value = '';
+      document.getElementById('rewardTeteDor').value = '';
+      document.getElementById('rewardCafeBoulud').value = '';
+      document.getElementById('rewardLePavillon').value = '';
+      document.getElementById('rewardLeGratin').value = '';
+      document.getElementById('rewardRestaurantDaniel').value = '';
       document.getElementById('isActive').checked = true;
       document.getElementById('opensAt').value = '';
       document.getElementById('closesAt').value = '';
@@ -746,7 +771,11 @@
         daniel_score_home: parseInt(document.getElementById('danielHome').value),
         daniel_score_away: parseInt(document.getElementById('danielAway').value),
         daniel_quote: document.getElementById('danielQuote').value,
-        reward_text: document.getElementById('rewardText').value,
+        reward_tete_dor: document.getElementById('rewardTeteDor').value,
+        reward_cafe_boulud: document.getElementById('rewardCafeBoulud').value,
+        reward_le_pavillon: document.getElementById('rewardLePavillon').value,
+        reward_le_gratin: document.getElementById('rewardLeGratin').value,
+        reward_restaurant_daniel: document.getElementById('rewardRestaurantDaniel').value,
         is_active: document.getElementById('isActive').checked,
         opens_at: nyToUtc(document.getElementById('opensAt').value),
         closes_at: (() => {

@@ -586,12 +586,13 @@
           </div>
           <div class="field">
             <label>Restaurant</label>
-            <select id="frest">
+            <select id="frest" onchange="updatePrize()">
               <option value="">Select a restaurant…</option>
               <option>La Tête D'Or</option>
               <option>Café Boulud at Maison Barnes</option>
               <option>Le Pavillon</option>
               <option>Le Gratin</option>
+              <option>Restaurant Daniel</option>
             </select>
           </div>
         </div>
@@ -731,7 +732,7 @@
       document.getElementById('matchVenue').textContent = data.venue || '';
       document.getElementById('matchStage').textContent = data.stage || '';
       document.getElementById('prizeStage').textContent = 'Prize · ' + (data.stage || '');
-      document.getElementById('prizeReward').textContent = data.reward_text || '';
+      document.getElementById('prizeReward').textContent = 'Select a restaurant to see your prize';
 
       if (data.closes_at) {
         const msLeft = new Date(data.closes_at) - new Date();
@@ -742,6 +743,25 @@
           }, msLeft);
         }
       }
+    }
+
+    function getReward(match, restaurant) {
+      const map = {
+        'La Tête D\'Or': match.reward_tete_dor,
+        'Café Boulud at Maison Barnes': match.reward_cafe_boulud,
+        'Le Pavillon': match.reward_le_pavillon,
+        'Le Gratin': match.reward_le_gratin,
+        'Restaurant Daniel': match.reward_restaurant_daniel
+      };
+      return map[restaurant] || '';
+    }
+
+    function updatePrize() {
+      if (!activeMatch) return;
+      const rest = document.getElementById('frest').value;
+      document.getElementById('prizeReward').textContent = rest
+        ? getReward(activeMatch, rest)
+        : 'Select a restaurant to see your prize';
     }
 
     function adj(id, delta) {
@@ -808,7 +828,7 @@
         activeMatch.team_home + ' ' + danielHome + ' – ' + danielAway + ' ' + activeMatch.team_away;
       document.getElementById('danielQuote').textContent =
         activeMatch.daniel_quote ? '"' + activeMatch.daniel_quote + '"' : '';
-      document.getElementById('revealPrize').textContent = activeMatch.reward_text || '';
+      document.getElementById('revealPrize').textContent = getReward(activeMatch, rest);
 
       document.getElementById('mainForm').style.display = 'none';
       document.getElementById('revealScreen').style.display = 'block';

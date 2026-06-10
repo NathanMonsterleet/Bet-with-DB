@@ -449,6 +449,11 @@
         </div>
       </div>
 
+      <div class="card">
+        <div class="card-title">Schedule</div>
+        <div id="scheduleAdmin"><div style="font-size:13px;color:#aaa;">Loading…</div></div>
+      </div>
+
     </div>
   </div>
 
@@ -530,6 +535,7 @@
         document.getElementById('adminPanel').style.display = 'block';
         loadStats();
         loadMatches();
+        loadSchedule();
         document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
       } else {
         document.getElementById('loginError').style.display = 'block';
@@ -861,6 +867,72 @@
       setTimeout(() => document.getElementById('resultSuccess').style.display = 'none', 3000);
       loadStats();
       loadMatches();
+    }
+
+    let scheduleData = [];
+
+    async function loadSchedule() {
+      const { data } = await client.from('schedule').select('*').order('sort_order');
+      scheduleData = data || [];
+      renderScheduleAdmin();
+    }
+
+    function renderScheduleAdmin() {
+      const container = document.getElementById('scheduleAdmin');
+      if (!scheduleData.length) {
+        container.innerHTML = '<div style="font-size:13px;color:#aaa;">No schedule data.</div>';
+        return;
+      }
+      container.innerHTML = scheduleData.map(g => `
+        <div style="padding:14px 0;border-bottom:1px solid #f0ede6;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:11px;color:#aaa;letter-spacing:0.08em;text-transform:uppercase;font-weight:500;">${g.short_date} &nbsp;·&nbsp; ${g.stage}</span>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#555;cursor:pointer;">
+              <input type="checkbox" id="spt-${g.id}" ${g.is_past ? 'checked' : ''} style="width:auto;cursor:pointer;"> Mark as past
+            </label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <input type="text" id="sth-${g.id}" value="${g.team_home || ''}" placeholder="Home team"
+              oninput="schedAutoFlag(${g.id},'home')"
+              style="padding:8px 10px;border:1px solid #e8e3da;border-radius:8px;font-family:inherit;font-size:13px;color:#1a1a1a;outline:none;" />
+            <input type="text" id="sta-${g.id}" value="${g.team_away || ''}" placeholder="Away team"
+              oninput="schedAutoFlag(${g.id},'away')"
+              style="padding:8px 10px;border:1px solid #e8e3da;border-radius:8px;font-family:inherit;font-size:13px;color:#1a1a1a;outline:none;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="text" id="sfh-${g.id}" value="${g.flag_home || ''}" placeholder="🏳 Home flag"
+              style="width:90px;padding:8px 10px;border:1px solid #e8e3da;border-radius:8px;font-family:inherit;font-size:13px;outline:none;" />
+            <input type="text" id="sfa-${g.id}" value="${g.flag_away || ''}" placeholder="🏳 Away flag"
+              style="width:90px;padding:8px 10px;border:1px solid #e8e3da;border-radius:8px;font-family:inherit;font-size:13px;outline:none;" />
+            <button onclick="saveScheduleRow(${g.id})"
+              style="margin-left:auto;padding:8px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;">Save</button>
+          </div>
+          <div id="ssc-${g.id}" style="font-size:12px;color:#166534;margin-top:6px;display:none;">Saved!</div>
+        </div>`).join('');
+    }
+
+    function schedAutoFlag(id, side) {
+      const name = document.getElementById(side === 'home' ? `sth-${id}` : `sta-${id}`).value.trim().toLowerCase();
+      const flag = FLAG_MAP[name];
+      if (flag) document.getElementById(side === 'home' ? `sfh-${id}` : `sfa-${id}`).value = flag;
+    }
+
+    async function saveScheduleRow(id) {
+      const payload = {
+        team_home: document.getElementById(`sth-${id}`).value || null,
+        team_away: document.getElementById(`sta-${id}`).value || null,
+        flag_home: document.getElementById(`sfh-${id}`).value || null,
+        flag_away: document.getElementById(`sfa-${id}`).value || null,
+        is_past: document.getElementById(`spt-${id}`).checked
+      };
+      const { error } = await client.from('schedule').update(payload).eq('id', id);
+      if (!error) {
+        const g = scheduleData.find(x => x.id === id);
+        if (g) Object.assign(g, payload);
+        const el = document.getElementById(`ssc-${id}`);
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 2000);
+      }
     }
   </script>
 </body>

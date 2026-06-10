@@ -736,31 +736,21 @@
 
     let activeMatch = null;
 
-    const SCHEDULE = [
-      { date: '2026-06-13', short: 'Jun 13', fh: '🇧🇷', fa: '🇲🇦', stage: 'Group' },
-      { date: '2026-06-16', short: 'Jun 16', fh: '🇫🇷', fa: '🇸🇳', stage: 'Group' },
-      { date: '2026-06-22', short: 'Jun 22', fh: '🇳🇴', fa: '🇸🇳', stage: 'Group' },
-      { date: '2026-06-25', short: 'Jun 25', fh: '🇪🇨', fa: '🇩🇪', stage: 'Group' },
-      { date: '2026-06-27', short: 'Jun 27', fh: '🇵🇦', fa: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', stage: 'Group' },
-      { date: '2026-06-30', short: 'Jun 30', fh: null,  fa: null,  stage: 'R32' },
-      { date: '2026-07-05', short: 'Jul 5',  fh: null,  fa: null,  stage: 'R16' },
-      { date: '2026-07-14', short: 'Jul 14', fh: null,  fa: null,  stage: 'Semi' },
-      { date: '2026-07-15', short: 'Jul 15', fh: null,  fa: null,  stage: 'Semi' },
-      { date: '2026-07-19', short: 'Jul 19', fh: null,  fa: null,  stage: 'Final' },
-    ];
-
-    function renderSchedule() {
+    async function renderSchedule() {
+      const { data } = await client.from('schedule').select('*').order('sort_order');
+      if (!data) return;
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-      document.getElementById('scheduleStrip').innerHTML = SCHEDULE.map(g => {
-        const flags = g.fh ? `${g.fh} ${g.fa}` : '⚽ ⚽';
-        const cls = g.date < todayStr ? 'past' : '';
-        return `<div class="sched-card ${cls}" data-date="${g.date}">
-          <div class="sched-date">${g.short}</div>
+      document.getElementById('scheduleStrip').innerHTML = data.map(g => {
+        const flags = g.flag_home ? `${g.flag_home} ${g.flag_away || ''}` : '⚽ ⚽';
+        const isPast = g.is_past || g.match_date < todayStr;
+        return `<div class="sched-card ${isPast ? 'past' : ''}" data-date="${g.match_date}">
+          <div class="sched-date">${g.short_date}</div>
           <div class="sched-flags">${flags}</div>
           <div class="sched-stage">${g.stage}</div>
         </div>`;
       }).join('');
+      highlightSchedule();
     }
 
     function highlightSchedule() {

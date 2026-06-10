@@ -668,6 +668,10 @@
             <input type="email" id="femail" placeholder="you@example.com" />
           </div>
           <div class="field">
+            <label>Phone number <span style="color:#ccc;font-weight:300;">(optional)</span></label>
+            <input type="tel" id="fphone" placeholder="e.g. +1 212 555 0100" />
+          </div>
+          <div class="field">
             <label>Restaurant</label>
             <select id="frest" onchange="updatePrize()">
               <option value="">Select a restaurant…</option>
@@ -745,7 +749,7 @@
 
       <div style="background:#f7f5f0;border-radius:12px;padding:14px 16px;margin-top:16px;text-align:left;">
         <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#b08d3e;font-weight:500;margin-bottom:6px;">What happens next</div>
-        <div style="font-size:13px;color:#555;line-height:1.6;">After the final whistle, we'll email you within 24 hours if your score prediction is correct. Show that email on your <strong>next visit</strong> to claim your prize.</div>
+        <div style="font-size:13px;color:#555;line-height:1.6;">After the final whistle, we'll reach out by email or text within 24 hours if your score prediction is correct. Show that message on your <strong>next visit</strong> to claim your prize.</div>
       </div>
     </div>
   </div>
@@ -895,6 +899,7 @@
       const fname = document.getElementById('fname').value.trim();
       const lname = document.getElementById('lname').value.trim();
       const email = document.getElementById('femail').value.trim();
+      const phone = document.getElementById('fphone').value.trim();
       const rest = document.getElementById('frest').value;
       const errEl = document.getElementById('errorMsg');
 
@@ -919,6 +924,7 @@
         match_id: activeMatch.id,
         guest_name: fname + ' ' + lname,
         guest_email: email,
+        guest_phone: phone || null,
         restaurant: rest,
         score_home: scoreHome,
         score_away: scoreAway

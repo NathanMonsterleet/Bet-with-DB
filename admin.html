@@ -442,6 +442,14 @@
         <div class="error-msg" id="resultError">Something went wrong. Please try again.</div>
       </div>
 
+      <div class="card" id="predictionsCard" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #f0ede6;">
+          <div class="card-title" style="margin:0;padding:0;border:none;" id="predictionsCardTitle">Predictions</div>
+          <button onclick="loadPredictions()" style="padding:5px 12px;font-size:12px;border-radius:7px;border:1px solid #e0d9cc;background:#fff;color:#555;cursor:pointer;font-family:inherit;">Refresh</button>
+        </div>
+        <div id="predictionsList"><div style="font-size:13px;color:#aaa;">Loading…</div></div>
+      </div>
+
       <div class="card">
         <div class="card-title">All matches</div>
         <div class="match-list" id="matchList">
@@ -536,6 +544,7 @@
         loadStats();
         loadMatches();
         loadSchedule();
+        loadPredictions();
         document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
       } else {
         document.getElementById('loginError').style.display = 'block';
@@ -867,6 +876,39 @@
       setTimeout(() => document.getElementById('resultSuccess').style.display = 'none', 3000);
       loadStats();
       loadMatches();
+    }
+
+    async function loadPredictions() {
+      const { data: activeMatch } = await client
+        .from('matches').select('id,team_home,team_away,flag_home,flag_away').eq('is_active', true).single();
+
+      const card = document.getElementById('predictionsCard');
+      const list = document.getElementById('predictionsList');
+
+      if (!activeMatch) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+      document.getElementById('predictionsCardTitle').textContent =
+        `Predictions — ${activeMatch.flag_home || ''} ${activeMatch.team_home} vs ${activeMatch.team_away} ${activeMatch.flag_away || ''}`.trim();
+
+      const { data: preds, error } = await client
+        .from('predictions')
+        .select('*')
+        .eq('match_id', activeMatch.id)
+        .order('created_at', { ascending: false });
+
+      if (error || !preds || preds.length === 0) {
+        list.innerHTML = '<div style="font-size:13px;color:#aaa;font-style:italic;">No predictions yet.</div>';
+        return;
+      }
+
+      list.innerHTML = preds.map(p => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0ede6;gap:12px;">
+          <div style="min-width:0;">
+            <div style="font-size:13px;font-weight:500;color:#1a1a1a;">${p.guest_name}</div>
+            <div style="font-size:11px;color:#aaa;margin-top:2px;">${p.guest_email}${p.guest_phone ? ' · ' + p.guest_phone : ''} · ${p.restaurant}</div>
+          </div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#1a1a1a;flex-shrink:0;">${p.score_home}–${p.score_away}</div>
+        </div>`).join('');
     }
 
     let scheduleData = [];

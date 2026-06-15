@@ -424,7 +424,12 @@
 
       <div class="card">
         <div class="card-title">Enter final result</div>
-        <p style="font-size:13px;color:#888;margin-bottom:16px;">After the game, enter the real score to automatically flag winners.</p>
+        <div class="field" style="margin-bottom:16px;">
+          <label>Match</label>
+          <select id="resultMatchId">
+            <option value="">Select a match…</option>
+          </select>
+        </div>
 
         <div class="grid-2">
           <div class="field">
@@ -442,10 +447,15 @@
         <div class="error-msg" id="resultError">Something went wrong. Please try again.</div>
       </div>
 
-      <div class="card" id="predictionsCard" style="display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #f0ede6;">
-          <div class="card-title" style="margin:0;padding:0;border:none;" id="predictionsCardTitle">Predictions</div>
+      <div class="card" id="predictionsCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f0ede6;">
+          <div class="card-title" style="margin:0;padding:0;border:none;">Predictions</div>
           <button onclick="loadPredictions()" style="padding:5px 12px;font-size:12px;border-radius:7px;border:1px solid #e0d9cc;background:#fff;color:#555;cursor:pointer;font-family:inherit;">Refresh</button>
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+          <select id="predictionsMatchId" onchange="loadPredictions()">
+            <option value="">Select a match…</option>
+          </select>
         </div>
         <div id="predictionsList"><div style="font-size:13px;color:#aaa;">Loading…</div></div>
       </div>
@@ -653,6 +663,21 @@
       matchesData = data || [];
       updateQuickControl();
 
+      // Populate match selectors
+      const matchOptions = (data || []).map(m =>
+        `<option value="${m.id}">${m.flag_home || ''} ${m.team_home} vs ${m.team_away} ${m.flag_away || ''} (${m.match_date})</option>`
+      ).join('');
+      const emptyOpt = '<option value="">Select a match…</option>';
+      document.getElementById('resultMatchId').innerHTML = emptyOpt + matchOptions;
+      document.getElementById('predictionsMatchId').innerHTML = emptyOpt + matchOptions;
+
+      // Default selectors to active match
+      const active = (data || []).find(m => m.is_active);
+      if (active) {
+        document.getElementById('resultMatchId').value = active.id;
+        document.getElementById('predictionsMatchId').value = active.id;
+      }
+
       if (!data || data.length === 0) {
         list.innerHTML = '<div style="font-size:13px;color:#aaa;">No matches yet.</div>';
         return;
@@ -844,29 +869,27 @@
       btn.disabled = true;
       btn.textContent = 'Saving…';
 
-      const resultHome = parseInt(document.getElementById('resultHome').value);
-      const resultAway = parseInt(document.getElementById('resultAway').value);
-
-      const { data: activeMatch } = await client
-        .from('matches').select('id').eq('is_active', true).single();
-
-      if (!activeMatch) {
-        document.getElementById('resultError').textContent = 'No active match found.';
+      const matchId = document.getElementById('resultMatchId').value;
+      if (!matchId) {
+        document.getElementById('resultError').textContent = 'Please select a match.';
         document.getElementById('resultError').style.display = 'block';
         btn.disabled = false;
         btn.textContent = 'Save result & flag winners';
         return;
       }
 
+      const resultHome = parseInt(document.getElementById('resultHome').value);
+      const resultAway = parseInt(document.getElementById('resultAway').value);
+
       await client.from('matches').update({
         actual_score_home: resultHome,
         actual_score_away: resultAway,
         is_finished: true,
         is_active: false
-      }).eq('id', activeMatch.id);
+      }).eq('id', matchId);
 
       await client.from('predictions').update({ is_winner: true })
-        .eq('match_id', activeMatch.id)
+        .eq('match_id', matchId)
         .eq('score_home', resultHome)
         .eq('score_away', resultAway);
 
@@ -879,21 +902,25 @@
     }
 
     async function loadPredictions() {
-      const { data: activeMatch } = await client
-        .from('matches').select('id,team_home,team_away,flag_home,flag_away').eq('is_active', true).single();
-
-      const card = document.getElementById('predictionsCard');
+      const matchId = document.getElementById('predictionsMatchId').value;
       const list = document.getElementById('predictionsList');
 
-      if (!activeMatch) { card.style.display = 'none'; return; }
-      card.style.display = 'block';
-      document.getElementById('predictionsCardTitle').textContent =
-        `Predictions — ${activeMatch.flag_home || ''} ${activeMatch.team_home} vs ${activeMatch.team_away} ${activeMatch.flag_away || ''}`.trim();
+      if (!matchId) {
+        list.innerHTML = '<div style="font-size:13px;color:#aaa;font-style:italic;">Select a match above to view predictions.</div>';
+        document.getElementById('predictionsCardTitle').textContent = 'Predictions';
+        return;
+      }
+
+      const match = matchesData.find(m => String(m.id) === String(matchId));
+      if (match) {
+        document.getElementById('predictionsCardTitle').textContent =
+          `Predictions — ${match.flag_home || ''} ${match.team_home} vs ${match.team_away} ${match.flag_away || ''}`.trim();
+      }
 
       const { data: preds, error } = await client
         .from('predictions')
         .select('*')
-        .eq('match_id', activeMatch.id)
+        .eq('match_id', matchId)
         .order('created_at', { ascending: false });
 
       if (error || !preds || preds.length === 0) {

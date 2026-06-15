@@ -908,14 +908,7 @@
 
       if (!matchId) {
         list.innerHTML = '<div style="font-size:13px;color:#aaa;font-style:italic;">Select a match above to view predictions.</div>';
-        document.getElementById('predictionsCardTitle').textContent = 'Predictions';
         return;
-      }
-
-      const match = matchesData.find(m => String(m.id) === String(matchId));
-      if (match) {
-        document.getElementById('predictionsCardTitle').textContent =
-          `Predictions — ${match.flag_home || ''} ${match.team_home} vs ${match.team_away} ${match.flag_away || ''}`.trim();
       }
 
       const { data: preds, error } = await client

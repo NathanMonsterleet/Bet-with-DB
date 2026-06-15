@@ -554,7 +554,6 @@
         loadStats();
         loadMatches();
         loadSchedule();
-        loadPredictions();
         document.getElementById('matchDate').value = new Date().toISOString().split('T')[0];
       } else {
         document.getElementById('loginError').style.display = 'block';
@@ -677,6 +676,8 @@
         document.getElementById('resultMatchId').value = active.id;
         document.getElementById('predictionsMatchId').value = active.id;
       }
+
+      loadPredictions();
 
       if (!data || data.length === 0) {
         list.innerHTML = '<div style="font-size:13px;color:#aaa;">No matches yet.</div>';

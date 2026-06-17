@@ -207,8 +207,13 @@
   function exportCSV() {
     const filtered = getFiltered();
     if (!filtered.length) { alert('No winners to export.'); return; }
-    const rows = [['Match', 'Date', 'Name', 'Email', 'Phone', 'Marketing Opt-In', 'Restaurant', 'Pick']];
-    filtered.forEach(w => rows.push([w.matchLabel, w.date, w.guest_name, w.guest_email, w.guest_phone, w.marketing_opt_in, w.restaurant, `${w.score_home}–${w.score_away}`]));
+    const rows = [['Match', 'Date', 'First Name', 'Last Name', 'Email', 'Phone', 'Marketing Opt-In', 'Restaurant', 'Pick']];
+    filtered.forEach(w => {
+      const spaceIdx = w.guest_name.indexOf(' ');
+      const firstName = spaceIdx === -1 ? w.guest_name : w.guest_name.slice(0, spaceIdx);
+      const lastName = spaceIdx === -1 ? '' : w.guest_name.slice(spaceIdx + 1);
+      rows.push([w.matchLabel, w.date, firstName, lastName, w.guest_email, w.guest_phone, w.marketing_opt_in, w.restaurant, `${w.score_home}–${w.score_away}`]);
+    });
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);

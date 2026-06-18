@@ -990,7 +990,7 @@
         const finalResult = (m.actual_score_home !== null && m.actual_score_away !== null)
           ? m.actual_score_home + '–' + m.actual_score_away : '';
 
-        await fetch('/.netlify/functions/sync-to-sheets', {
+        const res = await fetch('/.netlify/functions/sync-to-sheets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1007,7 +1007,14 @@
             finalResult,
             prize: prize || ''
           })
-        }).catch(() => {});
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          status.textContent = `Error on ${w.guest_name}: ${res.status} — ${text}`;
+          btn.disabled = false;
+          return;
+        }
 
         done++;
         status.textContent = `Syncing… ${done}/${winners.length}`;

@@ -51,12 +51,12 @@ exports.handler = async (event) => {
   // Ensure header row exists
   const headerRes = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: 'Sheet1!A1:L1'
+    range: 'A1:L1'
   });
   if (!headerRes.data.values || headerRes.data.values.length === 0) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: 'Sheet1!A1:L1',
+      range: 'A1:L1',
       valueInputOption: 'RAW',
       requestBody: { values: [HEADERS] }
     });
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
   if (action === 'prediction') {
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range: 'Sheet1!A:L',
+      range: 'A:L',
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
@@ -80,7 +80,7 @@ exports.handler = async (event) => {
     // Find the existing prediction row to update it
     const allRes = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: 'Sheet1!A:L'
+      range: 'A:L'
     });
 
     const rows = allRes.data.values || [];
@@ -97,7 +97,7 @@ exports.handler = async (event) => {
       // Update Final Result, Winner, Prize columns (I, J, K)
       await sheets.spreadsheets.values.update({
         spreadsheetId: sheetId,
-        range: `Sheet1!I${rowIndex}:K${rowIndex}`,
+        range: `I${rowIndex}:K${rowIndex}`,
         valueInputOption: 'RAW',
         requestBody: { values: [[finalResult, 'Yes', prize || '']] }
       });
@@ -105,7 +105,7 @@ exports.handler = async (event) => {
       // Prediction row not found — append a full winner row
       await sheets.spreadsheets.values.append({
         spreadsheetId: sheetId,
-        range: 'Sheet1!A:L',
+        range: 'A:L',
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {

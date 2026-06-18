@@ -445,6 +445,10 @@
         <button class="btn btn-gold section-gap" onclick="enterResult()">Save result &amp; flag winners</button>
         <div class="success-msg" id="resultSuccess">Result saved! Winners have been flagged.</div>
         <div class="error-msg" id="resultError">Something went wrong. Please try again.</div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0ede6;">
+          <button id="backfillBtn" onclick="backfillWinnersToSheets()" style="padding:9px 16px;font-size:13px;border-radius:9px;border:1px solid #e0d9cc;background:#fff;color:#555;cursor:pointer;font-family:inherit;font-weight:500;">Sync all existing winners to Google Sheets</button>
+          <div id="backfillStatus" style="font-size:12px;color:#aaa;margin-top:8px;display:none;"></div>
+        </div>
       </div>
 
       <div class="card" id="predictionsCard">
@@ -945,6 +949,72 @@
       setTimeout(() => document.getElementById('resultSuccess').style.display = 'none', 3000);
       loadStats();
       loadMatches();
+    }
+
+    async function backfillWinnersToSheets() {
+      const btn = document.getElementById('backfillBtn');
+      const status = document.getElementById('backfillStatus');
+      btn.disabled = true;
+      status.style.display = 'block';
+      status.textContent = 'Fetching winners…';
+
+      const { data: winners, error } = await client
+        .from('predictions').select('*').eq('is_winner', true);
+
+      if (error || !winners || winners.length === 0) {
+        status.textContent = error ? 'Error: ' + error.message : 'No winners found.';
+        btn.disabled = false;
+        return;
+      }
+
+      const { data: matches } = await client.from('matches').select('*');
+      const matchMap = {};
+      (matches || []).forEach(m => { matchMap[m.id] = m; });
+
+      const prizeField = {
+        "La Tête D'Or": 'reward_tete_dor',
+        'Café Boulud at Maison Barnes': 'reward_cafe_boulud',
+        'Le Pavillon': 'reward_le_pavillon',
+        'Le Gratin': 'reward_le_gratin',
+        'Restaurant Daniel': 'reward_restaurant_daniel'
+      };
+
+      let done = 0;
+      for (const w of winners) {
+        const m = matchMap[w.match_id];
+        if (!m) continue;
+        const spaceIdx = (w.guest_name || '').indexOf(' ');
+        const firstName = spaceIdx === -1 ? w.guest_name : w.guest_name.slice(0, spaceIdx);
+        const lastName = spaceIdx === -1 ? '' : w.guest_name.slice(spaceIdx + 1);
+        const prize = prizeField[w.restaurant] ? m[prizeField[w.restaurant]] : '';
+        const finalResult = (m.actual_score_home !== null && m.actual_score_away !== null)
+          ? m.actual_score_home + '–' + m.actual_score_away : '';
+
+        await fetch('/.netlify/functions/sync-to-sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'winner',
+            restaurant: w.restaurant,
+            firstName,
+            lastName,
+            email: w.guest_email,
+            match: m.team_home + ' vs ' + m.team_away,
+            date: m.match_date || '',
+            theirPick: w.score_home + '–' + w.score_away,
+            danielsPick: (m.daniel_score_home !== null && m.daniel_score_home !== undefined)
+              ? m.daniel_score_home + '–' + m.daniel_score_away : '',
+            finalResult,
+            prize: prize || ''
+          })
+        }).catch(() => {});
+
+        done++;
+        status.textContent = `Syncing… ${done}/${winners.length}`;
+      }
+
+      status.textContent = `Done — ${done} winner${done !== 1 ? 's' : ''} synced to Google Sheets.`;
+      btn.disabled = false;
     }
 
     async function loadPredictions() {

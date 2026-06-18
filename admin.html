@@ -894,6 +894,51 @@
         .eq('score_home', resultHome)
         .eq('score_away', resultAway);
 
+      // Sync winners to Google Sheets
+      const match = matchesData.find(m => String(m.id) === String(matchId));
+      if (match) {
+        const { data: winners } = await client
+          .from('predictions').select('*')
+          .eq('match_id', matchId)
+          .eq('score_home', resultHome)
+          .eq('score_away', resultAway);
+
+        const prizeMap = {
+          "La Tête D'Or": match.reward_tete_dor,
+          'Café Boulud at Maison Barnes': match.reward_cafe_boulud,
+          'Le Pavillon': match.reward_le_pavillon,
+          'Le Gratin': match.reward_le_gratin,
+          'Restaurant Daniel': match.reward_restaurant_daniel
+        };
+        const matchLabel = match.team_home + ' vs ' + match.team_away;
+        const finalResult = resultHome + '–' + resultAway;
+        const danielsPick = (match.daniel_score_home !== null && match.daniel_score_home !== undefined)
+          ? match.daniel_score_home + '–' + match.daniel_score_away : '';
+
+        await Promise.all((winners || []).map(w => {
+          const spaceIdx = (w.guest_name || '').indexOf(' ');
+          const firstName = spaceIdx === -1 ? w.guest_name : w.guest_name.slice(0, spaceIdx);
+          const lastName = spaceIdx === -1 ? '' : w.guest_name.slice(spaceIdx + 1);
+          return fetch('/.netlify/functions/sync-to-sheets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'winner',
+              restaurant: w.restaurant,
+              firstName,
+              lastName,
+              email: w.guest_email,
+              match: matchLabel,
+              date: match.match_date || '',
+              theirPick: w.score_home + '–' + w.score_away,
+              danielsPick,
+              finalResult,
+              prize: prizeMap[w.restaurant] || ''
+            })
+          }).catch(() => {});
+        }));
+      }
+
       btn.disabled = false;
       btn.textContent = 'Save result & flag winners';
       document.getElementById('resultSuccess').style.display = 'block';

@@ -1,3 +1,8 @@
+[build]
+  command = "npm install"
+  publish = "."
+  functions = "netlify/functions"
+
 [[redirects]]
   from = "/admin"
   to = "/admin.html"

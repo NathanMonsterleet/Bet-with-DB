@@ -94,13 +94,7 @@ exports.handler = async (event) => {
     }
 
     if (rowIndex !== -1) {
-      // Update Final Result, Winner, Prize columns (I, J, K)
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
-        range: `I${rowIndex}:K${rowIndex}`,
-        valueInputOption: 'RAW',
-        requestBody: { values: [[finalResult, 'Yes', prize || '']] }
-      });
+      // Row already exists — skip to preserve any manual edits (e.g. Redeemed column)
     } else {
       // Prediction row not found — append a full winner row
       await sheets.spreadsheets.values.append({

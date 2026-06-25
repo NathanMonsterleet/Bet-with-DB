@@ -949,25 +949,6 @@
         return;
       }
 
-      // Sync prediction to Google Sheets (fire-and-forget)
-      fetch('/.netlify/functions/sync-to-sheets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'prediction',
-          restaurant: rest,
-          firstName: fname,
-          lastName: lname,
-          email,
-          match: activeMatch.team_home + ' vs ' + activeMatch.team_away,
-          date: activeMatch.match_date || '',
-          theirPick: scoreHome + '–' + scoreAway,
-          danielsPick: (activeMatch.daniel_score_home !== null && activeMatch.daniel_score_home !== undefined)
-            ? activeMatch.daniel_score_home + '–' + activeMatch.daniel_score_away : '',
-          prize: getReward(activeMatch, rest)
-        })
-      }).catch(() => {});
-
       document.getElementById('rg1').textContent = scoreHome;
       document.getElementById('rg2').textContent = scoreAway;
       document.getElementById('revHomeLabel').textContent = activeMatch.team_home;

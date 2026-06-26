@@ -581,7 +581,8 @@
       }
 
       const { count: winners } = await client
-        .from('predictions').select('*', { count: 'exact', head: true }).eq('is_winner', true);
+        .from('predictions').select('*', { count: 'exact', head: true })
+        .or('is_winner.eq.true,is_selected_winner.eq.true');
 
       document.getElementById('statTotal').textContent = total || 0;
       document.getElementById('statToday').textContent = todayCount;
@@ -937,7 +938,9 @@
               theirPick: w.score_home + '–' + w.score_away,
               danielsPick,
               finalResult,
-              prize: prizeMap[w.restaurant] || ''
+              prize: prizeMap[w.restaurant] || '',
+              isRealWinner: true,
+              isSelectedWinner: !!w.is_selected_winner
             })
           }).catch(() => {});
         }));
@@ -959,7 +962,8 @@
       status.textContent = 'Fetching winners…';
 
       const { data: winners, error } = await client
-        .from('predictions').select('*').eq('is_winner', true);
+        .from('predictions').select('*')
+        .or('is_winner.eq.true,is_selected_winner.eq.true');
 
       if (error || !winners || winners.length === 0) {
         status.textContent = error ? 'Error: ' + error.message : 'No winners found.';
@@ -1005,7 +1009,9 @@
             danielsPick: (m.daniel_score_home !== null && m.daniel_score_home !== undefined)
               ? m.daniel_score_home + '–' + m.daniel_score_away : '',
             finalResult,
-            prize: prize || ''
+            prize: prize || '',
+            isRealWinner: !!w.is_winner,
+            isSelectedWinner: !!w.is_selected_winner
           })
         });
 
@@ -1044,14 +1050,95 @@
         return;
       }
 
-      list.innerHTML = preds.map(p => `
+      list.innerHTML = preds.map(p => {
+        const realBadge = p.is_winner
+          ? '<span style="display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:500;background:#fdf9f1;color:#b08d3e;border:1px solid #e8d9b0;margin-left:6px;">Real winner</span>'
+          : '';
+        const selBadge = p.is_selected_winner
+          ? '<span style="display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:500;background:#eef6ee;color:#2f7a35;border:1px solid #c8e2cc;margin-left:6px;">Selected</span>'
+          : '';
+        const toggleLabel = p.is_selected_winner ? 'Remove selection' : 'Mark as winner';
+        const toggleStyle = p.is_selected_winner
+          ? 'border:1px solid #fecaca;background:#fff;color:#dc2626;'
+          : 'border:1px solid #e0d9cc;background:#fff;color:#555;';
+        return `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0ede6;gap:12px;">
           <div style="min-width:0;">
-            <div style="font-size:13px;font-weight:500;color:#1a1a1a;">${p.guest_name}</div>
+            <div style="font-size:13px;font-weight:500;color:#1a1a1a;">${p.guest_name}${realBadge}${selBadge}</div>
             <div style="font-size:11px;color:#aaa;margin-top:2px;">${p.guest_email}${p.guest_phone ? ' · ' + p.guest_phone : ''} · ${p.restaurant}</div>
           </div>
-          <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#1a1a1a;flex-shrink:0;">${p.score_home}–${p.score_away}</div>
-        </div>`).join('');
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#1a1a1a;">${p.score_home}–${p.score_away}</div>
+            <button onclick="toggleSelectedWinner('${p.id}', this)" style="padding:6px 11px;font-size:11px;border-radius:7px;${toggleStyle}cursor:pointer;font-family:inherit;font-weight:500;">${toggleLabel}</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function toggleSelectedWinner(id, btn) {
+      btn.disabled = true;
+      const origText = btn.textContent;
+      btn.textContent = 'Saving…';
+
+      const { data: p, error: fetchErr } = await client
+        .from('predictions').select('*').eq('id', id).single();
+      if (fetchErr || !p) {
+        alert('Error loading prediction: ' + (fetchErr?.message || 'not found'));
+        btn.disabled = false; btn.textContent = origText;
+        return;
+      }
+
+      const newSelected = !p.is_selected_winner;
+      const { error: updErr } = await client
+        .from('predictions').update({ is_selected_winner: newSelected }).eq('id', id);
+      if (updErr) {
+        alert('Error: ' + updErr.message);
+        btn.disabled = false; btn.textContent = origText;
+        return;
+      }
+
+      const m = matchesData.find(x => String(x.id) === String(p.match_id));
+      if (m) {
+        const prizeField = {
+          "La Tête D'Or": 'reward_tete_dor',
+          'Café Boulud at Maison Barnes': 'reward_cafe_boulud',
+          'Le Pavillon': 'reward_le_pavillon',
+          'Le Gratin': 'reward_le_gratin',
+          'Restaurant Daniel': 'reward_restaurant_daniel'
+        };
+        const spaceIdx = (p.guest_name || '').indexOf(' ');
+        const firstName = spaceIdx === -1 ? p.guest_name : p.guest_name.slice(0, spaceIdx);
+        const lastName = spaceIdx === -1 ? '' : p.guest_name.slice(spaceIdx + 1);
+        const finalResult = (m.actual_score_home !== null && m.actual_score_away !== null)
+          ? m.actual_score_home + '–' + m.actual_score_away : '';
+        const danielsPick = (m.daniel_score_home !== null && m.daniel_score_home !== undefined)
+          ? m.daniel_score_home + '–' + m.daniel_score_away : '';
+
+        try {
+          await fetch('/.netlify/functions/sync-to-sheets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'winner',
+              restaurant: p.restaurant,
+              firstName,
+              lastName,
+              email: p.guest_email,
+              match: m.team_home + ' vs ' + m.team_away,
+              date: m.match_date || '',
+              theirPick: p.score_home + '–' + p.score_away,
+              danielsPick,
+              finalResult,
+              prize: prizeField[p.restaurant] ? m[prizeField[p.restaurant]] || '' : '',
+              isRealWinner: !!p.is_winner,
+              isSelectedWinner: newSelected
+            })
+          });
+        } catch (e) { /* swallow — DB state is the source of truth */ }
+      }
+
+      loadStats();
+      loadPredictions();
     }
 
     let scheduleData = [];

@@ -120,7 +120,7 @@
         .from('predictions')
         .select('*')
         .eq('match_id', m.id)
-        .eq('is_winner', true);
+        .or('is_winner.eq.true,is_selected_winner.eq.true');
 
       (preds || []).forEach(w => allWinnersData.push({
         id: w.id,
@@ -139,7 +139,9 @@
         marketing_opt_in: w.marketing_opt_in ? 'Yes' : 'No',
         restaurant: w.restaurant || '',
         score_home: w.score_home,
-        score_away: w.score_away
+        score_away: w.score_away,
+        is_real_winner: !!w.is_winner,
+        is_selected_winner: !!w.is_selected_winner
       }));
     }
 
@@ -183,11 +185,19 @@
         <div class="match-title">${first.flag_home} ${first.team_home} vs ${first.team_away} ${first.flag_away}</div>
         <div class="match-meta">${first.date}${first.stage ? ' · ' + first.stage : ''}</div>
         <div class="match-result">Result: ${first.result}</div>
-        ${winners.map(w => `
+        ${winners.map(w => {
+          const realTag = w.is_real_winner
+            ? '<span style="display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:500;background:#fdf9f1;color:#b08d3e;border:1px solid #e8d9b0;margin-left:6px;vertical-align:middle;">Real</span>'
+            : '';
+          const selTag = w.is_selected_winner
+            ? '<span style="display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:500;background:#eef6ee;color:#2f7a35;border:1px solid #c8e2cc;margin-left:6px;vertical-align:middle;">Selected</span>'
+            : '';
+          return `
           <div class="winner-row">
-            <span class="winner-info">🏆 ${w.guest_name} (${w.guest_email}${w.guest_phone ? ' · ' + w.guest_phone : ''}) — ${w.restaurant} — picked ${w.score_home}–${w.score_away}</span>
+            <span class="winner-info">🏆 ${w.guest_name}${realTag}${selTag} (${w.guest_email}${w.guest_phone ? ' · ' + w.guest_phone : ''}) — ${w.restaurant} — picked ${w.score_home}–${w.score_away}</span>
             <button class="btn-delete" onclick="deleteWinner('${w.id}')">Delete</button>
-          </div>`).join('')}`;
+          </div>`;
+        }).join('')}`;
       output.appendChild(div);
     });
   }
@@ -207,12 +217,12 @@
   function exportCSV() {
     const filtered = getFiltered();
     if (!filtered.length) { alert('No winners to export.'); return; }
-    const rows = [['Match', 'Date', 'First Name', 'Last Name', 'Email', 'Phone', 'Marketing Opt-In', 'Restaurant', 'Pick']];
+    const rows = [['Match', 'Date', 'First Name', 'Last Name', 'Email', 'Phone', 'Marketing Opt-In', 'Restaurant', 'Pick', 'Real Winner', 'Selected Winner']];
     filtered.forEach(w => {
       const spaceIdx = w.guest_name.indexOf(' ');
       const firstName = spaceIdx === -1 ? w.guest_name : w.guest_name.slice(0, spaceIdx);
       const lastName = spaceIdx === -1 ? '' : w.guest_name.slice(spaceIdx + 1);
-      rows.push([w.matchLabel, w.date, firstName, lastName, w.guest_email, w.guest_phone, w.marketing_opt_in, w.restaurant, `${w.score_home}–${w.score_away}`]);
+      rows.push([w.matchLabel, w.date, firstName, lastName, w.guest_email, w.guest_phone, w.marketing_opt_in, w.restaurant, `${w.score_home}–${w.score_away}`, w.is_real_winner ? 'Yes' : 'No', w.is_selected_winner ? 'Yes' : 'No']);
     });
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
